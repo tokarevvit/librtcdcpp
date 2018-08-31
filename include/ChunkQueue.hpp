@@ -25,50 +25,66 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * Simple blocking thread-safe queue.
+ */
+
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <memory>
+#include <mutex>
+#include <queue>
 
-#include <cstring>
-#include <condition_variable>
+#include "Chunk.hpp"
+
+
 namespace rtcdcpp {
 
-// Utility class for passing messages around
-class Chunk {
+/**
+ * Thread-Safe Queue of DataChunks
+ */
+class ChunkQueue {
  private:
-  size_t len{0};
-  uint8_t *data{nullptr};
+  mutable std::mutex mut;
+  std::queue<ChunkPtr> chunk_queue;
+  std::condition_variable data_cond;
+  bool stopping;
 
  public:
-  // TODO memory pool?
-  // XXX should we just use a vector?
+  ChunkQueue() : chunk_queue(), stopping(false) {}
 
-  // Makes a copy of data
-  Chunk(const void *dataToCopy, size_t dataLen) : len(dataLen), data(new uint8_t[len]) { memcpy(data, dataToCopy, dataLen); }
-
-  // Copy constructor
-  Chunk(const Chunk &other) : len(other.len), data(new uint8_t[len]) { memcpy(data, other.data, other.len); }
-
-  // Assignment operator
-  Chunk &operator=(const Chunk &other) {
-    if (data) {
-      len = 0;
-      delete[] data;
-    }
-    len = other.len;
-    data = new uint8_t[len];
-    memcpy(data, other.data, other.len);
-    return *this;
+  void Stop() {
+    std::lock_guard<std::mutex> lock(mut);
+    stopping = true;
+    data_cond.notify_all();
   }
 
-  ~Chunk() { delete[] data; }
+  void push(ChunkPtr chunk) {
+    std::lock_guard<std::mutex> lock(mut);
+    if (stopping) {
+      return;
+    }
+    chunk_queue.push(chunk);
+    data_cond.notify_one();
+  }
 
-  size_t Size() const { return len; }
-  size_t Length() const { return Size(); }
-  uint8_t *Data() const { return data; }
+  ChunkPtr wait_and_pop() {
+    std::unique_lock<std::mutex> lock(mut);
+    while (!stopping && chunk_queue.empty()) {
+      data_cond.wait(lock);
+    }
+
+    if (stopping) {
+      return ChunkPtr();
+    }
+
+    ChunkPtr res = chunk_queue.front();
+    chunk_queue.pop();
+    return res;
+  }
+
+  bool empty() const {
+    std::lock_guard<std::mutex> lock(mut);
+    return chunk_queue.empty();
+  }
 };
-
-using ChunkPtr = std::shared_ptr<Chunk>;
 }

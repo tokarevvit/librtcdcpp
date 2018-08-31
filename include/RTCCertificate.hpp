@@ -28,62 +28,38 @@
 #pragma once
 
 /**
- * Wrapper around OpenSSL DTLS.
+ * Wrapper around OpenSSL Certs.
  */
+#include <memory>
+#include <cstring>
+#include <string>
 
-#include "ChunkQueue.hpp"
-#include "PeerConnection.hpp"
-#include "Logging.hpp"
+#include "openssl/x509.h"
 
-#include <openssl/ssl.h>
-
-#include <thread>
 
 namespace rtcdcpp {
 
-class DTLSWrapper {
+#define SHA256_FINGERPRINT_SIZE (95 + 1)
+
+class RTCCertificate {
  public:
-  DTLSWrapper(PeerConnection *peer_connection);
-  virtual ~DTLSWrapper();
+  static RTCCertificate GenerateCertificate(std::string common_name, int days);
 
-  const RTCCertificate *certificate() { return certificate_; }
+  RTCCertificate(std::string cert_pem, std::string pkey_pem);
 
-  bool Initialize();
-  void Start();
-  void Stop();
+  const std::string &fingerprint() const { return fingerprint_; }
 
-  void EncryptData(ChunkPtr chunk);
-  void DecryptData(ChunkPtr chunk);
+ protected:
+  friend class DTLSWrapper;
 
-  void SetEncryptedCallback(std::function<void(ChunkPtr chunk)>);
-  void SetDecryptedCallback(std::function<void(ChunkPtr chunk)>);
+  X509 *x509() const { return x509_.get(); }
+  EVP_PKEY *evp_pkey() const { return evp_pkey_.get(); }
 
  private:
-  PeerConnection *peer_connection;
-  const RTCCertificate *certificate_;
+  RTCCertificate(std::shared_ptr<X509> x509, std::shared_ptr<EVP_PKEY> evp_pkey);
 
-  std::atomic<bool> should_stop;
-
-  ChunkQueue encrypt_queue;
-  ChunkQueue decrypt_queue;
-
-  std::thread encrypt_thread;
-  std::thread decrypt_thread;
-
-  void RunEncrypt();
-  void RunDecrypt();
-
-  // SSL Context
-  std::mutex ssl_mutex;
-  SSL_CTX *ctx;
-  SSL *ssl;
-  BIO *in_bio, *out_bio;
-
-  bool handshake_complete;
-
-  std::function<void(ChunkPtr chunk)> decrypted_callback;
-  std::function<void(ChunkPtr chunk)> encrypted_callback;
-
-  std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.DTLS");
+  std::shared_ptr<X509> x509_;
+  std::shared_ptr<EVP_PKEY> evp_pkey_;
+  std::string fingerprint_;
 };
 }

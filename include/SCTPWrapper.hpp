@@ -30,18 +30,18 @@
 /**
  * Wrapper around usrsctp.
  */
+#include <thread>
+
+#include "usrsctp.h"
 
 #include "ChunkQueue.hpp"
 #include "PeerConnection.hpp"
-
-#include <thread>
-
-#include <usrsctp.h>
 
 namespace rtcdcpp {
 
 #define MAX_OUT_STREAM 256
 #define MAX_IN_STREAM 256
+
 
 class SCTPWrapper {
  public:
@@ -123,7 +123,5 @@ class SCTPWrapper {
   static void _DebugLog(const char *format, ...);
   static int _OnSCTPForGS(struct socket *sock, union sctp_sockstore addr, void *data, size_t len, struct sctp_rcvinfo recv_info, int flags,
                           void *user_data);
-
-  std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.SCTP");
 };
 }

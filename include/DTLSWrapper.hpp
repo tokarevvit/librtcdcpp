@@ -25,69 +25,62 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * Simple blocking thread-safe queue.
- */
-
 #pragma once
 
-#include "Chunk.hpp"
+/**
+ * Wrapper around OpenSSL DTLS.
+ */
+#include <thread>
 
-#include <mutex>
-#include <queue>
+#include "openssl/ssl.h"
 
-//REMOVE
-#include <iostream>
+#include "ChunkQueue.hpp"
+#include "PeerConnection.hpp"
 
 
 namespace rtcdcpp {
 
-/**
- * Thread-Safe Queue of DataChunks
- */
-class ChunkQueue {
- private:
-  mutable std::mutex mut;
-  std::queue<ChunkPtr> chunk_queue;
-  std::condition_variable data_cond;
-  bool stopping;
-
+class DTLSWrapper {
  public:
-  ChunkQueue() : chunk_queue(), stopping(false) {}
+  DTLSWrapper(PeerConnection *peer_connection);
+  virtual ~DTLSWrapper();
 
-  void Stop() {
-    std::lock_guard<std::mutex> lock(mut);
-    stopping = true;
-    data_cond.notify_all();
-  }
+  const RTCCertificate *certificate() { return certificate_; }
 
-  void push(ChunkPtr chunk) {
-    std::lock_guard<std::mutex> lock(mut);
-    if (stopping) {
-      return;
-    }
-    chunk_queue.push(chunk);
-    data_cond.notify_one();
-  }
+  bool Initialize();
+  void Start();
+  void Stop();
 
-  ChunkPtr wait_and_pop() {
-    std::unique_lock<std::mutex> lock(mut);
-    while (!stopping && chunk_queue.empty()) {
-      data_cond.wait(lock);
-    }
+  void EncryptData(ChunkPtr chunk);
+  void DecryptData(ChunkPtr chunk);
 
-    if (stopping) {
-      return ChunkPtr();
-    }
+  void SetEncryptedCallback(std::function<void(ChunkPtr chunk)>);
+  void SetDecryptedCallback(std::function<void(ChunkPtr chunk)>);
 
-    ChunkPtr res = chunk_queue.front();
-    chunk_queue.pop();
-    return res;
-  }
+ private:
+  PeerConnection *peer_connection;
+  const RTCCertificate *certificate_;
 
-  bool empty() const {
-    std::lock_guard<std::mutex> lock(mut);
-    return chunk_queue.empty();
-  }
+  std::atomic<bool> should_stop;
+
+  ChunkQueue encrypt_queue;
+  ChunkQueue decrypt_queue;
+
+  std::thread encrypt_thread;
+  std::thread decrypt_thread;
+
+  void RunEncrypt();
+  void RunDecrypt();
+
+  // SSL Context
+  std::mutex ssl_mutex;
+  SSL_CTX *ctx;
+  SSL *ssl;
+  BIO *in_bio, *out_bio;
+
+  bool handshake_complete;
+
+  std::function<void(ChunkPtr chunk)> decrypted_callback;
+  std::function<void(ChunkPtr chunk)> encrypted_callback;
 };
 }
