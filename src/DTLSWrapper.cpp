@@ -29,14 +29,15 @@
  * Simple wrapper around OpenSSL DTLS.
  */
 
-#include "rtcdcpp/DTLSWrapper.hpp"
-#include "rtcdcpp/RTCCertificate.hpp"
-
 #include <iostream>
 
-#include <openssl/bio.h>
-#include <openssl/ec.h>
-#include <openssl/ssl.h>
+#include "openssl/bio.h"
+#include "openssl/ec.h"
+#include "openssl/ssl.h"
+
+#include "DTLSWrapper.hpp"
+#include "RTCCertificate.hpp"
+
 
 namespace rtcdcpp {
 
@@ -124,7 +125,6 @@ bool DTLSWrapper::Initialize() {
 }
 
 void DTLSWrapper::Start() {
-  SPDLOG_TRACE(logger, "Start(): Starting handshake - {}", std::this_thread::get_id());
   if (peer_connection->role == peer_connection->Server) {
     SSL_set_accept_state(ssl); // This is for role server.
   } else {
@@ -136,7 +136,6 @@ void DTLSWrapper::Start() {
     // XXX: This is not actually valid (buf + offset send after)
     int nbytes = BIO_read(out_bio, buf, sizeof(buf));
     if (nbytes > 0) {
-      SPDLOG_TRACE(logger, "Start(): Sending handshake bytes {}", nbytes);
       this->encrypted_callback(std::make_shared<Chunk>(buf, nbytes));
     }
   }
@@ -167,8 +166,6 @@ void DTLSWrapper::SetDecryptedCallback(std::function<void(ChunkPtr chunk)> decry
 void DTLSWrapper::DecryptData(ChunkPtr chunk) { this->decrypt_queue.push(chunk); }
 
 void DTLSWrapper::RunDecrypt() {
-  SPDLOG_TRACE(logger, "RunDecrypt()");
-
   bool should_notify = false;
   while (!should_stop) {
     int read_bytes = 0;
@@ -224,7 +221,6 @@ void DTLSWrapper::RunDecrypt() {
 void DTLSWrapper::EncryptData(ChunkPtr chunk) { this->encrypt_queue.push(chunk); }
 
 void DTLSWrapper::RunEncrypt() {
-  SPDLOG_TRACE(logger, "RunEncrypt()");
   while (!this->should_stop) {
     ChunkPtr chunk = this->encrypt_queue.wait_and_pop();
     if (!chunk) {

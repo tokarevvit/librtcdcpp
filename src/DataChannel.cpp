@@ -30,9 +30,12 @@
  */
 
 #include <iostream>
-#include "rtcdcpp/DataChannel.hpp"
-#include "rtcdcpp/PeerConnection.hpp"
-#include <usrsctp.h>
+
+#include "usrsctp.h"
+
+#include "DataChannel.hpp"
+#include "PeerConnection.hpp"
+
 
 namespace rtcdcpp {
 
@@ -46,7 +49,9 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-DataChannel::~DataChannel() { delete this; }
+// Cause segmentation fault
+//DataChannel::~DataChannel() { delete this; }
+DataChannel::~DataChannel() = default;
 
 uint16_t DataChannel::GetStreamID() { return this->stream_id; }
 
@@ -71,9 +76,9 @@ bool DataChannel::SendString(std::string msg) {
 
 // TODO Take a shared_ptr to datachunk
 bool DataChannel::SendBinary(const uint8_t *msg, int len) {
-  std::cerr << "DC: Sending binary of len - " << len << std::endl;
+//  std::cerr << "DC: Sending binary of len - " << len << std::endl;
   this->pc->SendBinaryMsg(msg, len, this->stream_id);
-  std::cerr << "DC: Binary sent" << std::endl;
+//  std::cerr << "DC: Binary sent" << std::endl;
   return true;
 }
 
