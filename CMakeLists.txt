@@ -47,6 +47,6 @@ target_link_libraries(${PROJECT_NAME}
 	usrsctp
 	glib-2.0
 	nice
-	crypto
+	libcrypto
 	ssl
 )
