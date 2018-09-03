@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 14)
 link_directories(${USRSCTP_LIB_DIR})
 link_directories(${GLIB_LIB_DIR})
 link_directories(${NICE_LIB_DIR})
-link_directories(${OPENSSL_LIB_DIR})
+#link_directories(${OPENSSL_LIB_DIR})
+find_package(OpenSSL)
 
 set(HEADERS
 	include/Chunk.hpp
@@ -47,6 +48,7 @@ target_link_libraries(${PROJECT_NAME}
 	usrsctp
 	glib-2.0
 	nice
-	ssl
-	crypto
+#	ssl
+#	crypto
+    ${OPENSSL_LIBRARIES}
 )
