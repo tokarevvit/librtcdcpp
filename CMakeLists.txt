@@ -50,7 +50,6 @@ target_link_libraries(${PROJECT_NAME}
 	usrsctp
 	glib-2.0
 	nice
-	ssl
 )
 
 target_link_libraries(${PROJECT_NAME} ${LIB_SSL} ${LIB_CRYPTO})
