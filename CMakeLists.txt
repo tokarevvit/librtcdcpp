@@ -4,10 +4,10 @@ project(rtcdcpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
+# You must specify names below and OPENSSL_ROOT_DIR
 link_directories(${USRSCTP_LIB_DIR})
 link_directories(${GLIB_LIB_DIR})
 link_directories(${NICE_LIB_DIR})
-#link_directories(${OPENSSL_LIB_DIR})
 find_package(OpenSSL)
 
 set(HEADERS
@@ -48,7 +48,5 @@ target_link_libraries(${PROJECT_NAME}
 	usrsctp
 	glib-2.0
 	nice
-#	ssl
-#	crypto
-    ${OPENSSL_LIBRARIES}
+	${OPENSSL_LIBRARIES}
 )
