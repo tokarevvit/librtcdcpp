@@ -43,10 +43,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 )
 
+set(LIB ${OPENSSL_LIB_DIR}/libcrypto.a)
+
 target_link_libraries(${PROJECT_NAME}
 	usrsctp
 	glib-2.0
 	nice
 	ssl
-	${OPENSSL_LIB_DIR}/libcrypto.a
 )
+
+target_link_libraries(${PROJECT_NAME} ${LIB})
