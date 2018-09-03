@@ -48,4 +48,5 @@ target_link_libraries(${PROJECT_NAME}
 	glib-2.0
 	nice
 	crypto
+	ssl
 )
