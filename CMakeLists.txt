@@ -43,7 +43,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 )
 
-set(LIB ${OPENSSL_LIB_DIR}/libcrypto.a)
+find_library(LIB libcrypto.a HINTS ${OPENSSL_LIB_DIR})
 
 target_link_libraries(${PROJECT_NAME}
 	usrsctp
