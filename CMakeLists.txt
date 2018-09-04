@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(rtcdcpp)
 
 set(CMAKE_CXX_STANDARD 14)
-option(SPDLOG_DISABLED ON)
+option(DISABLE_SPDLOG ON)
 
 # You must specify names below and OPENSSL_ROOT_DIR
 link_directories(${USRSCTP_LIB_DIR})
