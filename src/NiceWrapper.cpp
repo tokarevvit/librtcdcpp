@@ -295,6 +295,7 @@ std::string NiceWrapper::GenerateLocalSDP() {
 }
 
 bool NiceWrapper::SetRemoteIceCandidate(string candidate_sdp) {
+	std::cerr << "NiceWrapper::SetRemoteIceCandidate start\n";
   GSList *list = NULL;
   NiceCandidate *rcand = nice_agent_parse_remote_candidate_sdp(this->agent.get(), this->stream_id, candidate_sdp.c_str());
 
@@ -308,6 +309,7 @@ bool NiceWrapper::SetRemoteIceCandidate(string candidate_sdp) {
 
   g_slist_free_full(list, (GDestroyNotify)&nice_candidate_free);
 
+  std::cerr << "NiceWrapper::SetRemoteIceCandidate end\n";
   return success;
 }
 
