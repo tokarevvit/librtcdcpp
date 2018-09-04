@@ -43,11 +43,11 @@ std::shared_ptr<Logger> GetLogger(const std::string &logger_name) {
 }
 
 #else
-
+*/
 std::shared_ptr<Logger> GetLogger(const std::string &logger) {
   return std::make_shared<Logger>();
 }
 
-#endif
-*/
+//#endif
+
 }
