@@ -29,7 +29,7 @@
  * Basic implementation of libnice stuff.
  */
 
-#include "rtcdcpp/NiceWrapper.hpp"
+#include "NiceWrapper.hpp"
 
 #include <sstream>
 

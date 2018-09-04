@@ -29,11 +29,11 @@
  * RTC Handler.
  */
 
-#include "rtcdcpp/PeerConnection.hpp"
-#include "rtcdcpp/DTLSWrapper.hpp"
-#include "rtcdcpp/NiceWrapper.hpp"
-#include "rtcdcpp/SCTPWrapper.hpp"
-#include "rtcdcpp/Logging.hpp"
+#include "PeerConnection.hpp"
+#include "DTLSWrapper.hpp"
+#include "NiceWrapper.hpp"
+#include "SCTPWrapper.hpp"
+#include "Logging.hpp"
 
 #include <sstream>
 

@@ -30,8 +30,8 @@
  */
 
 #include <iostream>
-#include "rtcdcpp/DataChannel.hpp"
-#include "rtcdcpp/PeerConnection.hpp"
+#include "DataChannel.hpp"
+#include "PeerConnection.hpp"
 #include <usrsctp.h>
 
 namespace rtcdcpp {

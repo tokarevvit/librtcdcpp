@@ -29,7 +29,7 @@
  * Simple wrapper around OpenSSL Certs.
  */
 
-#include "rtcdcpp/RTCCertificate.hpp"
+#include "RTCCertificate.hpp"
 
 #include <openssl/pem.h>
 

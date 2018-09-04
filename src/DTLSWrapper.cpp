@@ -29,8 +29,8 @@
  * Simple wrapper around OpenSSL DTLS.
  */
 
-#include "rtcdcpp/DTLSWrapper.hpp"
-#include "rtcdcpp/RTCCertificate.hpp"
+#include "DTLSWrapper.hpp"
+#include "RTCCertificate.hpp"
 
 #include <iostream>
 

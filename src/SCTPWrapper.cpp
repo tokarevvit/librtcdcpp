@@ -29,8 +29,8 @@
  * Wrapper around usrsctp/
  */
 
-#include "rtcdcpp/SCTPWrapper.hpp"
-#include "rtcdcpp/Logging.hpp"
+#include "SCTPWrapper.hpp"
+#include "Logging.hpp"
 #include <iostream>
 #include <stdio.h>
 

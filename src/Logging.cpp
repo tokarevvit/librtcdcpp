@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "rtcdcpp/Logging.hpp"
+#include "Logging.hpp"
 
 namespace rtcdcpp {
 
