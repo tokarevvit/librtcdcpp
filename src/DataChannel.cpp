@@ -90,6 +90,7 @@ void DataChannel::SetOnClosedCallback(std::function<void()> closed_cb) { this->c
 void DataChannel::SetOnErrorCallback(std::function<void(std::string description)> error_cb) { this->error_cb = error_cb; }
 
 void DataChannel::OnOpen() {
+	std::cerr << "DataChannel::OnOpen\n";
   if (this->open_cb) {
     this->open_cb();
   }

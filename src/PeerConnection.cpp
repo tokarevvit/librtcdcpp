@@ -246,6 +246,7 @@ std::shared_ptr<DataChannel> PeerConnection::GetChannel(uint16_t sid) {
 }
 
 void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
+	std::cerr << "PeerConnection::HandleNewDataChannel start\n";
   uint8_t *raw_msg = chunk->Data();
   dc_open_msg open_msg;
   open_msg.chan_type = raw_msg[1];
@@ -270,9 +271,12 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
   } else {
     logger->warn("No new channel callback, ignoring new channel");
   }
+
+  std::cerr << "PeerConnection::HandleNewDataChannel end\n";
 }
 
 void PeerConnection::HandleDataChannelAck(uint16_t sid) {
+	std::cerr << "PeerConnection::HandleDataChannelAck start\n";
   auto new_channel = GetChannel(sid);
   if (this->new_channel_cb) {
     this->new_channel_cb(new_channel);
@@ -284,6 +288,8 @@ void PeerConnection::HandleDataChannelAck(uint16_t sid) {
   } else {
     new_channel->OnOpen();
   }
+
+  std::cerr << "PeerConnection::HandleDataChannelAck end\n";
 }
 
 void PeerConnection::HandleDataChannelClose(uint16_t sid) {
@@ -307,6 +313,7 @@ void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
 }
 
 void PeerConnection::HandleBinaryMessage(ChunkPtr chunk, uint16_t sid) {
+	std::cerr << "PeerConnection::HandleBinaryMessage start\n";
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
     logger->warn("Received binary msg on unknown channel: {}", sid);
@@ -314,6 +321,8 @@ void PeerConnection::HandleBinaryMessage(ChunkPtr chunk, uint16_t sid) {
   }
 
   cur_channel->OnBinaryMsg(chunk);
+
+  std::cerr << "PeerConnection::HandleBinaryMessage end\n";
 }
 
 void PeerConnection::SendStrMsg(std::string str_msg, uint16_t sid) {
