@@ -30,12 +30,9 @@
  */
 
 #include <iostream>
-
-#include "usrsctp.h"
-
-#include "DataChannel.hpp"
-#include "PeerConnection.hpp"
-
+#include "rtcdcpp/DataChannel.hpp"
+#include "rtcdcpp/PeerConnection.hpp"
+#include <usrsctp.h>
 
 namespace rtcdcpp {
 
@@ -49,7 +46,7 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-// Cause segmentation fault
+// Cause segmentation false
 //DataChannel::~DataChannel() { delete this; }
 DataChannel::~DataChannel() = default;
 

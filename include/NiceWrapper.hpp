@@ -30,15 +30,15 @@
 /**
  * Wrapper around libnice and NiceAgent.
  */
-#include <thread>
 
 #include "ChunkQueue.hpp"
 #include "PeerConnection.hpp"
+#include "Logging.hpp"
 
+#include <thread>
 
 extern "C" {
-//#include "agent/agent.h"
-#include "nice/agent.h"
+#include <nice/agent.h>
 }
 
 namespace rtcdcpp {
@@ -124,5 +124,7 @@ class NiceWrapper {
                                 gpointer user_data);
   friend void data_received(NiceAgent *agent, guint stream_id, guint component_id, guint len, gchar *buf, gpointer user_data);
   friend void nice_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
+
+  std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.Nice");
 };
 }

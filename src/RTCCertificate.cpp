@@ -28,10 +28,10 @@
 /**
  * Simple wrapper around OpenSSL Certs.
  */
-#include "openssl/pem.h"
 
-#include "RTCCertificate.hpp"
+#include "rtcdcpp/RTCCertificate.hpp"
 
+#include <openssl/pem.h>
 
 namespace rtcdcpp {
 

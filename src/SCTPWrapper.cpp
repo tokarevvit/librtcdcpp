@@ -29,14 +29,14 @@
  * Wrapper around usrsctp/
  */
 
+#include "rtcdcpp/SCTPWrapper.hpp"
+#include "rtcdcpp/Logging.hpp"
 #include <iostream>
 #include <stdio.h>
+
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "SCTPWrapper.hpp"
-
 
 namespace rtcdcpp {
 
@@ -46,7 +46,8 @@ SCTPWrapper::SCTPWrapper(DTLSEncryptCallbackPtr dtlsEncryptCB, MsgReceivedCallba
       remote_port(5000),
       stream_cursor(0),
       dtlsEncryptCallback(dtlsEncryptCB),
-	  msgReceivedCallback(msgReceivedCB) {}
+	  msgReceivedCallback(msgReceivedCB),
+	  logger( GetLogger("rtcdcpp.SCTP") ) {}
 
 SCTPWrapper::~SCTPWrapper() {
   Stop();
@@ -65,34 +66,45 @@ static uint16_t interested_events[] = {SCTP_ASSOC_CHANGE,         SCTP_PEER_ADDR
 // TODO: error callbacks
 void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
   if (notify->sn_header.sn_length != (uint32_t)len) {
-	//std::cerr << "OnNotification(len={" << len << "}) invalid length: " << notify->sn_header.sn_length << '\n';
+    logger->error("OnNotification(len={}) invalid length: {}", len, notify->sn_header.sn_length);
     return;
   }
 
   switch (notify->sn_header.sn_type) {
     case SCTP_ASSOC_CHANGE:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_ASSOC_CHANGE)");
       break;
     case SCTP_PEER_ADDR_CHANGE:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_PEER_ADDR_CHANGE)");
       break;
     case SCTP_REMOTE_ERROR:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_REMOTE_ERROR)");
       break;
     case SCTP_SEND_FAILED_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_SEND_FAILED_EVENT)");
       break;
     case SCTP_SHUTDOWN_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_SHUTDOWN_EVENT)");
       break;
     case SCTP_ADAPTATION_INDICATION:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_ADAPTATION_INDICATION)");
       break;
     case SCTP_PARTIAL_DELIVERY_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_PARTIAL_DELIVERY_EVENT)");
       break;
     case SCTP_AUTHENTICATION_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_AUTHENTICATION_EVENT)");
       break;
     case SCTP_SENDER_DRY_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_SENDER_DRY_EVENT)");
       break;
     case SCTP_NOTIFICATIONS_STOPPED_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_NOTIFICATIONS_STOPPED_EVENT)");
       break;
     case SCTP_STREAM_RESET_EVENT:
       // Close datachannel
       
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_STREAM_RESET_EVENT)");
       struct sctp_stream_reset_event* reset_event;
       reset_event = &notify->sn_strreset_event;
       uint32_t e_length;
@@ -111,22 +123,24 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
             //fires when we close the stream from our side explicity or
             //as a result of remote close or some error.
             
+            logger->info("Outgoing stream_id#{} have been reset, calling onClose CB", streamid);
             const uint8_t dc_close_data = DC_TYPE_CLOSE;
             const uint8_t *dc_close_ptr = &dc_close_data;
             OnMsgReceived(dc_close_ptr, sizeof(dc_close_ptr), streamid, PPID_CONTROL);
             //The above signals to call our onClose callback
           }
           if ((reset_event->strreset_flags ^ SCTP_STREAM_RESET_DENIED) == 0) {
-			//std::cerr << "Stream reset denied by peer\n";
+            logger->error("Stream reset denied by peer");
           }
           if ((reset_event->strreset_flags ^ SCTP_STREAM_RESET_FAILED) == 0) {
-			//std::cerr << "Stream reset failed\n";
+            logger->error("Stream reset failed");
           }
         } else {
           continue;
         }
         if (set_flags == SCTP_STREAM_RESET_OUTGOING) {
           // Reset the stream when a remote close is received.
+          logger->info("SCTP Reset received for stream_id#{} from remote", streamid);
           ResetSCTPStream(streamid, set_flags);
           // This will cause another event SCTP_STREAM_RESET_OUTGOING_SSN 
           // where we can finally call our callbacks.
@@ -134,10 +148,13 @@ void SCTPWrapper::OnNotification(union sctp_notification *notify, size_t len) {
       }
       break;
     case SCTP_ASSOC_RESET_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_ASSOC_RESET_EVENT)");
       break;
     case SCTP_STREAM_CHANGE_EVENT:
+      SPDLOG_TRACE(logger, "OnNotification(type=SCTP_STREAM_CHANGE_EVENT)");
       break;
     default:
+      SPDLOG_TRACE(logger, "OnNotification(type={} (unknown))", notify->sn_header.sn_type);
       break;
   }
 }
@@ -151,6 +168,7 @@ int SCTPWrapper::_OnSCTPForDTLS(void *sctp_ptr, void *data, size_t len, uint8_t 
 }
 
 int SCTPWrapper::OnSCTPForDTLS(void *data, size_t len, uint8_t tos, uint8_t set_df) {
+  SPDLOG_TRACE(logger, "Data ready. len={}, tos={}, set_df={}", len, tos, set_df);
   this->dtlsEncryptCallback(std::make_shared<Chunk>(data, len));
 
   {
@@ -168,6 +186,7 @@ void SCTPWrapper::_DebugLog(const char *format, ...) {
   // std::string msg = Util::FormatString(format, ap);
   char msg[1024 * 16];
   vsprintf(msg, format, ap);
+  GetLogger("librtcpp.SCTP")->trace("SCTP: msg={}", msg);
   va_end(ap);
 }
 
@@ -184,6 +203,13 @@ int SCTPWrapper::OnSCTPForGS(struct socket *sock, union sctp_sockstore addr, voi
   if (len == 0) {
     return -1;
   }
+
+  SPDLOG_TRACE(logger, "Data received. stream={}, len={}, SSN={}, TSN={}, PPID={}",
+                recv_info.rcv_sid,
+                len,
+                recv_info.rcv_ssn,
+                recv_info.rcv_tsn,
+                ntohl(recv_info.rcv_ppid));
 
   if (flags & MSG_NOTIFICATION) {
     OnNotification((union sctp_notification *)data, len);
@@ -206,7 +232,7 @@ bool SCTPWrapper::Initialize() {
 
   sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL,  usrsctp_sysctl_get_sctp_sendspace() / 2, this);
   if (!sock) {
-	//std::cerr << "Could not create usrsctp_socket. errno= " << errno << '\n';
+    logger->error("Could not create usrsctp_socket. errno={}", errno);
     return false;
   }
 
@@ -214,7 +240,7 @@ bool SCTPWrapper::Initialize() {
   linger_opt.l_onoff = 1;
   linger_opt.l_linger = 0;
   if (usrsctp_setsockopt(this->sock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)) == -1) {
-	//std::cerr << "Could not set socket options for SO_LINGER. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SO_LINGER. errno={}", errno);
     return false;
   }
 
@@ -224,7 +250,7 @@ bool SCTPWrapper::Initialize() {
   peer_param.spp_flags = SPP_PMTUD_DISABLE;
   peer_param.spp_pathmtu = 1200;  // XXX: Does this need to match the actual MTU?
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_PEER_ADDR_PARAMS, &peer_param, sizeof(peer_param)) == -1) {
-	//std::cerr << "Could not set socket options for SCTP_PEER_ADDR_PARAMS. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SCTP_PEER_ADDR_PARAMS. errno={}", errno);
     return false;
   }
 
@@ -232,13 +258,13 @@ bool SCTPWrapper::Initialize() {
   av.assoc_id = SCTP_ALL_ASSOC;
   av.assoc_value = 1;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_ENABLE_STREAM_RESET, &av, sizeof(av)) == -1) {
-	//std::cerr << "Could not set socket options for SCTP_ENABLE_STREAM_RESET. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SCTP_ENABLE_STREAM_RESET. errno={}", errno);
     return false;
   }
 
   uint32_t nodelay = 1;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_NODELAY, &nodelay, sizeof(nodelay)) == -1) {
-	//std::cerr << "Could not set socket options for SCTP_NODELAY. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SCTP_NODELAY. errno={}", errno);
     return false;
   }
 
@@ -251,7 +277,7 @@ bool SCTPWrapper::Initialize() {
   for (int i = 0; i < num_events; i++) {
     event.se_type = interested_events[i];
     if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_EVENT, &event, sizeof(event)) == -1) {
-	  //std::cerr << "Could not set socket options for SCTP_EVENT. errno= " << errno << '\n';
+      logger->error("Could not set socket options for SCTP_EVENT {}. errno={}", i, errno);
       return false;
     }
   }
@@ -261,7 +287,7 @@ bool SCTPWrapper::Initialize() {
   init_msg.sinit_num_ostreams = MAX_OUT_STREAM;
   init_msg.sinit_max_instreams = MAX_IN_STREAM;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_INITMSG, &init_msg, sizeof(init_msg)) == -1) {
-	//std::cerr << "Could not set socket options for SCTP_INITMSG. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SCTP_INITMSG. errno={}", errno);
     return false;
   }
 
@@ -274,7 +300,7 @@ bool SCTPWrapper::Initialize() {
 #endif
 
   if (usrsctp_bind(this->sock, (struct sockaddr *)&sconn, sizeof(sconn)) == -1) {
-	//std::cerr << "Could not usrsctp_bind. errno= " << errno << '\n';
+    logger->error("Could not usrsctp_bind. errno={}", errno);
     return false;
   }
 
@@ -283,10 +309,11 @@ bool SCTPWrapper::Initialize() {
 
 void SCTPWrapper::Start() {
   if (started) {
-	//std::cerr << "Start() - already started!\n";
+    logger->error("Start() - already started!");
     return;
   }
 
+  SPDLOG_TRACE(logger, "Start()");
   started = true;
 
   this->recv_thread = std::thread(&SCTPWrapper::RecvLoop, this);
@@ -326,7 +353,9 @@ void SCTPWrapper::ResetSCTPStream(uint16_t stream_id, uint16_t srs_flags) {
   stream_close->srs_number_streams = 1;
   stream_close->srs_stream_list[0] = stream_id;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RESET_STREAMS, stream_close, static_cast<socklen_t>(reinterpret_cast<uintptr_t>(&len))) == -1) {
-	//std::cerr << "Could not set socket options for SCTP_RESET_STREAMS. errno= " << errno << '\n';
+    logger->error("Could not set socket options for SCTP_RESET_STREAMS. errno={}", errno); 
+  } else {
+    logger->info("SCTP_RESET_STREAMS socket option has been set successfully on SID: {}", stream_id);
   }
   free(stream_close);
   stream_close = NULL;
@@ -367,8 +396,10 @@ void SCTPWrapper::SendACK(uint8_t chan_type, uint32_t reliability) {
       rinfo.srto_max = reliability;
       rinfo.srto_min = reliability;
       if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RTOINFO, &rinfo, sizeof(rinfo)) < 0) {
-		//std::cerr << "Error setting retransmission timeout on socket\n";
-	  }
+        logger->error("Error setting retransmission timeout on socket");
+      } else {
+        logger->info("Successfully set retransmission timeout on socket");
+      }
     }
     if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED
         || DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT) {
@@ -378,11 +409,16 @@ void SCTPWrapper::SendACK(uint8_t chan_type, uint32_t reliability) {
     sinfo.snd_ppid = htonl(PPID_CONTROL); 
     uint8_t payload = DC_TYPE_ACK;
     if (usrsctp_sendv(this->sock, &payload, sizeof(uint8_t), NULL, 0, &sinfo, sizeof(sinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
+      logger->error("Sending ACK failed");
       throw std::runtime_error("Sending ACK failed");
-	}
+    } else {
+      logger->info("Ack has gone through");
+    }
     if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_DEFAULT_SNDINFO, &sinfo, sizeof(sinfo)) < 0) {
-	  //std::cerr << "Setting Default SNDINFO failed\n";
-	}
+      logger->error("Setting Default SNDINFO failed");
+    } else {
+      logger->info("Default SNDINFO has been set");
+    }
 }
 void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8_t chan_type, uint32_t reliability) {
 
@@ -400,7 +436,9 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8
     sinfo.snd_flags |= SCTP_UNORDERED;
   }
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_DEFAULT_SNDINFO, &sinfo, sizeof(sinfo)) < 0) {
-	//std::cerr << "Setting default SNDINFO failed\n";
+    logger->error("Setting default SNDINFO failed");
+  } else {
+    logger->info("Default SNDINFO has been set");
   }
   if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_TIMED ||
       DATA_CHANNEL_PARTIAL_RELIABLE_TIMED_UNORDERED) {
@@ -409,8 +447,10 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8
     rinfo.srto_max = reliability;
     rinfo.srto_min = reliability;
     if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_RTOINFO, &rinfo, sizeof(rinfo)) < 0) {
-	  //std::cerr << "Error setting retransmission timeout on socket\n";
-	}
+      logger->error("Error setting retransmission timeout on socket");
+    } else {
+      logger->info("Successfully set retransmission timeout on socket");
+    }
   }
 
   if (chan_type == DATA_CHANNEL_PARTIAL_RELIABLE_REXMIT_UNORDERED ||
@@ -435,8 +475,10 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8
 
   if (started) {
     if (usrsctp_sendv(this->sock, this->data, total_size, NULL, 0, &sinfo, sizeof(sinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
-	  //std::cerr << "Failed to send a datachannel open request\n";
-	}
+      logger->error("Failed to send a datachannel open request.");
+    } else {
+      logger->info("Datachannel open request has gone through.");
+    }
   }
 }
 // Send a message to the remote connection
@@ -476,6 +518,8 @@ void SCTPWrapper::RecvLoop() {
   // Util::SetThreadName("SCTP-RecvLoop");
 //  NDC ndc("SCTP-RecvLoop");
 
+  SPDLOG_TRACE(logger, "RunRecv()");
+
   {
     // We need to wait for the connect thread to send some data
     unique_lock<mutex> l(connectMtx);
@@ -483,6 +527,8 @@ void SCTPWrapper::RecvLoop() {
       connectCV.wait_for(l, chrono::milliseconds(100));
     }
   }
+
+  SPDLOG_DEBUG(logger, "RunRecv() sent_data=true");
 
   while (!this->should_stop) {
     ChunkPtr chunk = this->recv_queue.wait_and_pop();
@@ -496,6 +542,7 @@ void SCTPWrapper::RecvLoop() {
 
 void SCTPWrapper::RunConnect() {
   // Util::SetThreadName("SCTP-Connect");
+  SPDLOG_TRACE(logger, "RunConnect() port={}", remote_port);
 
   struct sockaddr_conn sconn;
   sconn.sconn_family = AF_CONN;
@@ -509,7 +556,7 @@ void SCTPWrapper::RunConnect() {
   int connect_result = usrsctp_connect(sock, (struct sockaddr *)&sconn, sizeof sconn);
 
   if ((connect_result < 0) && (errno != EINPROGRESS)) {
-	//std::cerr << "Connection failed. errno= " << errno << '\n';
+    SPDLOG_DEBUG(logger, "Connection failed. errno={}", errno);
     should_stop = true;
 
     {
@@ -522,6 +569,7 @@ void SCTPWrapper::RunConnect() {
     // TODO let the world know we failed :(
 
   } else {
+    SPDLOG_DEBUG(logger, "Connected on port {}", remote_port);
     unique_lock<mutex> l2(createDCMtx);
     this->readyDataChannel = true;
     createDC.notify_all();

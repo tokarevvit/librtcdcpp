@@ -28,13 +28,14 @@
 /**
  * RTC Handler.
  */
+
+#include "rtcdcpp/PeerConnection.hpp"
+#include "rtcdcpp/DTLSWrapper.hpp"
+#include "rtcdcpp/NiceWrapper.hpp"
+#include "rtcdcpp/SCTPWrapper.hpp"
+#include "rtcdcpp/Logging.hpp"
+
 #include <sstream>
-
-#include "PeerConnection.hpp"
-#include "DTLSWrapper.hpp"
-#include "NiceWrapper.hpp"
-#include "SCTPWrapper.hpp"
-
 
 #define SESSION_ID_SIZE 16
 
@@ -45,7 +46,7 @@ using namespace std;
 std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname << ":" << ice_server.port; }
 
 PeerConnection::PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
-	: config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB) {
+	: config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB), logger( GetLogger("rtcdcpp.PeerConnection") ) {
   if (config_.certificates.empty()) {
     config_.certificates.push_back(RTCCertificate::GenerateCertificate("rtcdcpp", 365));
   }
@@ -68,19 +69,22 @@ bool PeerConnection::Initialize() {
       std::bind(&DTLSWrapper::EncryptData, dtls.get(), std::placeholders::_1),
       std::bind(&PeerConnection::OnSCTPMsgReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   if (!dtls->Initialize()) {
-	//std::cerr << "DTLS failure\n";
+    logger->error("DTLS failure");
     return false;
   }
+  SPDLOG_DEBUG(logger, "RTC: dtls initialized");
 
   if (!nice->Initialize()) {
-	//std::cerr << "NICE failure\n";
+    logger->error("Nice failure");
     return false;
   }
+  SPDLOG_DEBUG(logger, "RTC: nice initialized");
 
   if (!sctp->Initialize()) {
-	//std::cerr << "SCTP failure\n";
+    logger->error("sctp failure");
     return false;
   }
+  SPDLOG_DEBUG(logger, "RTC: sctp initialized");
 
   nice->SetDataReceivedCallback(std::bind(&DTLSWrapper::DecryptData, dtls.get(), std::placeholders::_1));
   dtls->SetDecryptedCallback(std::bind(&SCTPWrapper::DTLSForSCTP, sctp.get(), std::placeholders::_1));
@@ -125,6 +129,7 @@ std::string random_session_id() {
 std::string PeerConnection::GenerateOffer() {
   std::stringstream sdp;
   std::string session_id = random_session_id();
+  SPDLOG_TRACE(logger, "Generating Offer SDP: session_id={}", session_id);
 
   sdp << "v=0\r\n";
   sdp << "o=- " << session_id << " 0 IN IP4 0.0.0.0\r\n";  // Session ID
@@ -149,6 +154,7 @@ std::string PeerConnection::GenerateOffer() {
 std::string PeerConnection::GenerateAnswer() {
   std::stringstream sdp;
   std::string session_id = random_session_id();
+  SPDLOG_TRACE(logger, "Generating Answer SDP: session_id={}", session_id);
 
   sdp << "v=0\r\n";
   sdp << "o=- " << session_id << " 2 IN IP4 0.0.0.0\r\n";  // Session ID
@@ -185,37 +191,48 @@ void PeerConnection::OnLocalIceCandidate(std::string &ice_candidate) {
 }
 
 void PeerConnection::OnIceReady() {
+  SPDLOG_TRACE(logger, "OnIceReady(): Time to ping DTLS");
   if (!iceReady) {
     iceReady = true;
     this->dtls->Start();
   } else {
     // TODO work out
-	//std::cerr << "OnIceReady(): Called twice!!\n";
+    logger->warn("OnIceReady(): Called twice!!");
   }
 }
 
 void PeerConnection::OnDTLSHandshakeDone() {
+  SPDLOG_TRACE(logger, "OnDTLSHandshakeDone(): Time to get the SCTP party started");
   this->sctp->Start();
 }
 
 // Matches DataChannel onmessage
 void PeerConnection::OnSCTPMsgReceived(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
+  SPDLOG_TRACE(logger, "OnSCTPMsgReceived(): Handling an sctp message");
   if (ppid == PPID_CONTROL) {
+    SPDLOG_TRACE(logger, "Control PPID");
     if (chunk->Data()[0] == DC_TYPE_OPEN) {
+      logger->info("DC TYPE OPEN RECEIVED");
+      SPDLOG_TRACE(logger, "New channel time!");
       HandleNewDataChannel(chunk, sid);
     } else if (chunk->Data()[0] == DC_TYPE_ACK) {
+      SPDLOG_TRACE(logger, "DC ACK");
       HandleDataChannelAck(sid);
     } else if (chunk->Data()[0] == DC_TYPE_CLOSE) {
+      SPDLOG_TRACE(logger, "DC CLOSE");
       HandleDataChannelClose(sid);
     } else {
-	  //std::cerr << "Unknown msg_type for ppid control: " << chunk->Data()[0] << '\n';
+      SPDLOG_TRACE(logger, "Unknown msg_type for ppid control: {}", chunk->Data()[0]);
     }
   } else if ((ppid == PPID_STRING) || (ppid == PPID_STRING_EMPTY)) {
+    SPDLOG_TRACE(logger, "String msg");
     HandleStringMessage(chunk, sid);
   } else if ((ppid == PPID_BINARY) || (ppid == PPID_BINARY_EMPTY)) {
+
+    SPDLOG_TRACE(logger, "Binary msg");
     HandleBinaryMessage(chunk, sid);
   } else {
-	//std::cerr << "Unknown ppid= " << ppid << '\n';
+    logger->error("Unknown ppid={}", ppid);
   }
 }
 
@@ -240,6 +257,8 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
   std::string label(reinterpret_cast<char *>(raw_msg + 12), open_msg.label_len);
   std::string protocol(reinterpret_cast<char *>(raw_msg + 12 + open_msg.label_len), open_msg.protocol_len);
 
+  SPDLOG_DEBUG(logger, "Creating channel with sid: {}, chan_type: {}, label: {}, protocol: {}", sid, open_msg.chan_type, label, protocol);
+
   // TODO: Support overriding an existing channel
   auto new_channel = std::make_shared<DataChannel>(this, sid, open_msg.chan_type, label, protocol, reliability);
 
@@ -249,7 +268,7 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
   if (this->new_channel_cb) {
     this->new_channel_cb(new_channel);
   } else {
-	//std::cerr << "No new channel callback, ignoring new channel\n";
+    logger->warn("No new channel callback, ignoring new channel");
   }
 }
 
@@ -258,10 +277,10 @@ void PeerConnection::HandleDataChannelAck(uint16_t sid) {
   if (this->new_channel_cb) {
     this->new_channel_cb(new_channel);
   } else {
-	//std::cerr << "No new channel callback, ignoring new channel\n";
+    logger->warn("No new channel callback, ignoring new channel");
   }
   if (!new_channel) {
-	//std::cerr << "Cannot find the datachannel for sid: " << sid << '\n';
+    logger->warn("Cannot find the datachannel for sid {}", sid);
   } else {
     new_channel->OnOpen();
   }
@@ -270,7 +289,7 @@ void PeerConnection::HandleDataChannelAck(uint16_t sid) {
 void PeerConnection::HandleDataChannelClose(uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received close for unknown channel: " << sid << '\n';
+    logger->warn("Received close for unknown channel: {}", sid);
     return;
   }
   cur_channel->OnClosed();
@@ -279,7 +298,7 @@ void PeerConnection::HandleDataChannelClose(uint16_t sid) {
 void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received msg on unknown channel: " << sid << '\n';
+    logger->warn("Received msg on unknown channel: {}", sid);
     return;
   }
   std::string cur_msg(reinterpret_cast<char *>(chunk->Data()), chunk->Length());
@@ -290,7 +309,7 @@ void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
 void PeerConnection::HandleBinaryMessage(ChunkPtr chunk, uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received binary msg on unknown channel: " << sid << '\n';
+    logger->warn("Received binary msg on unknown channel: {}", sid);
     return;
   }
 
@@ -338,6 +357,7 @@ std::shared_ptr<DataChannel> PeerConnection::CreateDataChannel(std::string label
   data_channels[sid] = new_channel;
 
   std::thread create_dc = std::thread(&SCTPWrapper::CreateDCForSCTP, sctp.get(), label, protocol, chan_type, reliability);
+  logger->info("Creating channel locally with sid: {}, label: {}, protocol: {}, chan_type: {}, reliability: {}, spawning create_dc thread", sid, label, protocol, chan_type, reliability);
   create_dc.detach();
   return new_channel;
 }

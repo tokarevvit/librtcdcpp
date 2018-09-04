@@ -31,11 +31,9 @@
 
 #pragma once
 
+#include "Chunk.hpp"
 #include <functional>
 #include <string>
-
-#include "Chunk.hpp"
-
 
 namespace rtcdcpp {
 

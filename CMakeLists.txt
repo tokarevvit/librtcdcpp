@@ -19,6 +19,7 @@ set(HEADERS
 	include/PeerConnection.hpp
 	include/RTCCertificate.hpp
 	include/SCTPWrapper.hpp
+	include/Logging.hpp
 )
 
 set(SOURCES
@@ -28,6 +29,7 @@ set(SOURCES
 	src/PeerConnection.cpp
 	src/RTCCertificate.cpp
 	src/SCTPWrapper.cpp
+	src/Logging.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED
