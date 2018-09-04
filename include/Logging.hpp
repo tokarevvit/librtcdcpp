@@ -29,18 +29,18 @@
 
 #include <memory>
 
-#ifndef SPDLOG_DISABLED
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-#endif
+//#ifndef SPDLOG_DISABLED
+//#include <spdlog/spdlog.h>
+//#include <spdlog/fmt/ostr.h>
+//#endif
 
 namespace rtcdcpp {
 
-#ifndef SPDLOG_DISABLED
+//#ifndef SPDLOG_DISABLED
 
-typedef spdlog::logger Logger;
+//typedef spdlog::logger Logger;
 
-#else
+//#else
 
 class Logger {
  public:
@@ -82,7 +82,7 @@ class Logger {
 #define SPDLOG_TRACE(logger, ...)
 #define SPDLOG_DEBUG(logger, ...)
 
-#endif
+//#endif
 
 std::shared_ptr<Logger> GetLogger(const std::string &logger_name);
 
