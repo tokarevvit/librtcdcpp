@@ -27,15 +27,16 @@
 
 #pragma once
 
-#include "ChunkQueue.hpp"
-#include "DataChannel.hpp"
-#include "RTCCertificate.hpp"
 #include <atomic>
 #include <map>
 
+#include "ChunkQueue.hpp"
+#include "DataChannel.hpp"
+#include "RTCCertificate.hpp"
+
+
 namespace rtcdcpp {
 
-  class Logger;
   class NiceWrapper;
   class DTLSWrapper;
   class SCTPWrapper;
@@ -161,7 +162,6 @@ namespace rtcdcpp {
     void HandleStringMessage(ChunkPtr chunk, uint16_t sid);
     void HandleBinaryMessage(ChunkPtr chunk, uint16_t sid);
 
-	std::shared_ptr<Logger> logger;
     void ResetSCTPStream(uint16_t stream_id);
   };
 }

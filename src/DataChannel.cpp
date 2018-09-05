@@ -30,9 +30,12 @@
  */
 
 #include <iostream>
+
+#include "usrsctp.h"
+
 #include "DataChannel.hpp"
 #include "PeerConnection.hpp"
-#include <usrsctp.h>
+
 
 namespace rtcdcpp {
 
@@ -46,7 +49,7 @@ DataChannel::DataChannel(PeerConnection *pc, uint16_t stream_id, uint8_t chan_ty
   error_cb = [](std::string x) { ; };
 }
 
-// Cause segmentation false
+// Cause segmentation fault
 //DataChannel::~DataChannel() { delete this; }
 DataChannel::~DataChannel() = default;
 
@@ -90,7 +93,6 @@ void DataChannel::SetOnClosedCallback(std::function<void()> closed_cb) { this->c
 void DataChannel::SetOnErrorCallback(std::function<void(std::string description)> error_cb) { this->error_cb = error_cb; }
 
 void DataChannel::OnOpen() {
-	std::cerr << "DataChannel::OnOpen\n";
   if (this->open_cb) {
     this->open_cb();
   }

@@ -30,14 +30,13 @@
 /**
  * Wrapper around OpenSSL DTLS.
  */
+#include <thread>
+
+#include "openssl/ssl.h"
 
 #include "ChunkQueue.hpp"
 #include "PeerConnection.hpp"
-#include "Logging.hpp"
 
-#include <openssl/ssl.h>
-
-#include <thread>
 
 namespace rtcdcpp {
 
@@ -83,7 +82,5 @@ class DTLSWrapper {
 
   std::function<void(ChunkPtr chunk)> decrypted_callback;
   std::function<void(ChunkPtr chunk)> encrypted_callback;
-
-  std::shared_ptr<Logger> logger = GetLogger("rtcdcpp.DTLS");
 };
 }

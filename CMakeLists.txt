@@ -4,11 +4,10 @@ project(rtcdcpp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# You must specify names below and OPENSSL_ROOT_DIR
-link_directories(${USRSCTP_LIB_DIR})
-link_directories(${GLIB_LIB_DIR})
-link_directories(${NICE_LIB_DIR})
-find_package(OpenSSL)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Modules")
+find_package(OpenSSL REQUIRED)
+find_package(LibNice REQUIRED)
+find_package(UsrSCTP REQUIRED)
 
 set(HEADERS
 	include/Chunk.hpp
@@ -19,7 +18,6 @@ set(HEADERS
 	include/PeerConnection.hpp
 	include/RTCCertificate.hpp
 	include/SCTPWrapper.hpp
-	include/Logging.hpp
 )
 
 set(SOURCES
@@ -29,7 +27,6 @@ set(SOURCES
 	src/PeerConnection.cpp
 	src/RTCCertificate.cpp
 	src/SCTPWrapper.cpp
-	src/Logging.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED
@@ -38,17 +35,11 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-	${GLIB_INCLUDE_DIR}/glib-2.0
-	${GLIB_LIB_DIR}/glib-2.0/include
-	${USRSCTP_INCLUDE_DIR}
-	${NICE_INCLUDE_DIR}
-	${OPENSSL_INCLUDE_DIR}
 	${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(${PROJECT_NAME}
-	usrsctp
-	glib-2.0
-	nice
-	${OPENSSL_LIBRARIES}
+	SctpLab::UsrSCTP
+	LibNice::LibNice
+	OpenSSL::SSL
 )

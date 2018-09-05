@@ -31,13 +31,10 @@
 
 #pragma once
 
-#include "Chunk.hpp"
-
 #include <mutex>
 #include <queue>
 
-//REMOVE
-#include <iostream>
+#include "Chunk.hpp"
 
 
 namespace rtcdcpp {
