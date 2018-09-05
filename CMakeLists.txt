@@ -42,5 +42,5 @@ message("OpenSSL root dir: " ${OPENSSL_ROOT_DIR})
 target_link_libraries(${PROJECT_NAME}
 	SctpLab::UsrSCTP
 	LibNice::LibNice
-	${OPENSSL_LIBRARIES}
+	OpenSSL::SSL
 )

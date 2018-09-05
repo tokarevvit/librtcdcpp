@@ -37,7 +37,6 @@
 
 
 extern "C" {
-//#include "agent/agent.h"
 #include "nice/agent.h"
 }
 
