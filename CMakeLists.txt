@@ -38,8 +38,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 )
 
+message("OpenSSL root dir: " ${OPENSSL_ROOT_DIR})
 target_link_libraries(${PROJECT_NAME}
 	SctpLab::UsrSCTP
 	LibNice::LibNice
-	OpenSSL::SSL
+	${OPENSSL_LIBRARIES}
 )
