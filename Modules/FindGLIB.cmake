@@ -57,10 +57,11 @@ find_path(GLIBCONFIG_INCLUDE
 )
 
 find_path(GLIB_INCLUDE
-	NAMES glib.h
+	NAMES glib.h glib-object.h
 	HINTS ${GLIB_INCLUDE_DIR}
     PATH_SUFFIXES glib-2.0
 )
+message("FindGLIB: GLIB_INCLUDE=" ${GLIB_INCLUDE})
 
 set(GLIB_INCLUDES ${GLIB_INCLUDE} ${GLIBCONFIG_INCLUDE})
 
