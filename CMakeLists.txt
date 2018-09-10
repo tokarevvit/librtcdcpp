@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Modules")
 find_package(OpenSSL REQUIRED)
-find_package(LibNice REQUIRED)
 find_package(UsrSCTP REQUIRED)
+find_package(LibNice REQUIRED)
 
 set(HEADERS
 	include/Chunk.hpp
@@ -36,11 +36,11 @@ add_library(${PROJECT_NAME} SHARED
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
-	${OPENSSL_INCLUDE_DIR}
+	/home/tvm/projects/webrtc_client_poc/externals/openssl-1.0.2p/include
 )
 
 target_link_libraries(${PROJECT_NAME}
+	OpenSSL::SSL
 	SctpLab::UsrSCTP
 	LibNice::LibNice
-	OpenSSL::SSL
 )
