@@ -36,7 +36,6 @@ add_library(${PROJECT_NAME} SHARED
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
-	/home/tvm/projects/webrtc_client_poc/externals/openssl-1.0.2p/include
 )
 
 target_link_libraries(${PROJECT_NAME}
