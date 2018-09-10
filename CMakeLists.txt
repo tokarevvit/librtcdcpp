@@ -34,8 +34,6 @@ add_library(${PROJECT_NAME} SHARED
 	${SOURCES}
 )
 
-message("OpenSSL include dir: " ${OPENSSL_INCLUDE_DIR})
-
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${OPENSSL_INCLUDE_DIR}

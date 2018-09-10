@@ -34,7 +34,8 @@
 #include <cstring>
 #include <string>
 
-#include "openssl/x509.h"
+//#include "openssl/x509.h"
+#include "x509.h"
 
 
 namespace rtcdcpp {
