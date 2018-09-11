@@ -41,6 +41,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${OPENSSL_INCLUDE_DIR}
 	${NICE_INCLUDE_DIR}
+	${GLIB_INCLUDE_DIR}
+	${GLIB_INCLUDE_CONFIG_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
