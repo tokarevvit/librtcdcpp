@@ -447,15 +447,10 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   spa.sendv_flags = SCTP_SEND_SNDINFO_VALID;
 
   spa.sendv_sndinfo.snd_sid = sid;
-  // spa.sendv_sndinfo.snd_flags = SCTP_EOR | SCTP_UNORDERED;
-  spa.sendv_sndinfo.snd_flags = SCTP_UNORDERED;
   spa.sendv_sndinfo.snd_context = 0;
   spa.sendv_sndinfo.snd_assoc_id = 0;
-  //spa.sendv_sndinfo.snd_flags = SCTP_EOR;
   spa.sendv_sndinfo.snd_ppid = htonl(ppid);
-
-  // spa.sendv_prinfo.pr_policy = SCTP_PR_SCTP_RTX;
-  // spa.sendv_prinfo.pr_value = 0;
+  spa.sendv_sndinfo.snd_flags |= SCTP_EOR;
 
   int tries = 0;
   // "Resource temporarily unavaliable" occurs without a timeout. this->reliability is always 0
