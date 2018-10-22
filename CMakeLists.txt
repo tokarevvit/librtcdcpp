@@ -39,10 +39,15 @@ add_library(${PROJECT_NAME} SHARED
 
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_SOURCE_DIR}/include
+	${OPENSSL_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
-	OpenSSL::SSL
+	${OPENSSL_LIBRARIES}
 	SctpLab::UsrSCTP
 	LibNice::LibNice
 )
+
+if(WIN32)
+  target_link_libraries(${PROJECT_NAME} ws2_32)
+endif()

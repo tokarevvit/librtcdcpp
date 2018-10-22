@@ -29,7 +29,11 @@
  * Basic implementation of libnice stuff.
  */
 #include <sstream>
+#ifndef __WIN32
 #include <netdb.h>
+#else
+#include <winsock2.h>
+#endif // __WIN32
 
 #include "NiceWrapper.hpp"
 
