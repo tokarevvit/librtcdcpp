@@ -204,6 +204,38 @@ bool SCTPWrapper::Initialize() {
   usrsctp_sysctl_set_sctp_ecn_enable(0);
   usrsctp_register_address(this);
 
+  // Do not send ABORTs in response to INITs (1).
+  // Do not send ABORTs for received Out of the Blue packets (2).
+  usrsctp_sysctl_set_sctp_blackhole(2);
+
+  // Disable the Explicit Congestion Notification extension
+  usrsctp_sysctl_set_sctp_ecn_enable(0);
+
+  // Disable the Address Reconfiguration extension
+  usrsctp_sysctl_set_sctp_asconf_enable(0);
+
+  // Disable the Authentication extension
+  usrsctp_sysctl_set_sctp_auth_enable(0);
+
+  // Disable the NR-SACK extension (not standardised)
+  usrsctp_sysctl_set_sctp_nrsack_enable(0);
+
+  // Disable the Packet Drop Report extension (not standardised)
+  usrsctp_sysctl_set_sctp_pktdrop_enable(0);
+
+  // Enable the Partial Reliability extension
+  usrsctp_sysctl_set_sctp_pr_enable(1);
+
+  // Set amount of incoming streams
+  usrsctp_sysctl_set_sctp_nr_incoming_streams_default(MAX_IN_STREAM);
+
+  // Set amount of outgoing streams
+  usrsctp_sysctl_set_sctp_nr_outgoing_streams_default(MAX_OUT_STREAM);
+
+  // Enable interleaving messages for different streams (incoming)
+  // See: https://tools.ietf.org/html/rfc6458#section-8.1.20
+  usrsctp_sysctl_set_sctp_default_frag_interleave(2);
+
   sock = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &SCTPWrapper::_OnSCTPForGS, NULL,  usrsctp_sysctl_get_sctp_sendspace() / 2, this);
   if (!sock) {
 	//std::cerr << "Could not create usrsctp_socket. errno= " << errno << '\n';
@@ -262,6 +294,11 @@ bool SCTPWrapper::Initialize() {
   init_msg.sinit_max_instreams = MAX_IN_STREAM;
   if (usrsctp_setsockopt(this->sock, IPPROTO_SCTP, SCTP_INITMSG, &init_msg, sizeof(init_msg)) == -1) {
 	//std::cerr << "Could not set socket options for SCTP_INITMSG. errno= " << errno << '\n';
+    return false;
+  }
+
+  if (usrsctp_set_non_blocking(sock, 1) < 0) {
+    std::cerr << "Could not set unblocking. errno= " << errno << '\n';
     return false;
   }
 
@@ -455,7 +492,7 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   int tries = 0;
   // "Resource temporarily unavaliable" occurs without a timeout. this->reliability is always 0
 //  while (tries <= this->reliability) {
-  while (tries < 300000) {
+  while (tries < 100) {
     if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
       //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
       std::this_thread::sleep_for(std::chrono::milliseconds(tries));
