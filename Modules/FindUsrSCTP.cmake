@@ -4,7 +4,7 @@ if (NOT TARGET SctpLab::UsrSCTP)
     set(USRSCTP_DEFINITIONS INET INET6)
 	find_path(USRSCTP_INCLUDE usrsctp.h HINTS ${USRSCTP_INCLUDE_DIR} PATH_SUFFIXES usrsctp)
 #	find_library(USRSCTP_LIBRARY NAMES usrsctp libusrsctp HINTS ${USRSCTP_LIB_DIR})
-	find_library(USRSCTP_LIBRARY NAMES libusrsctp.a HINTS ${USRSCTP_LIB_DIR})
+	find_library(USRSCTP_LIBRARY NAMES libusrsctp.a usrsctp HINTS ${USRSCTP_LIB_DIR})
 
     include(FindPackageHandleStandardArgs)
 	find_package_handle_standard_args(Usrsctp DEFAULT_MSG USRSCTP_LIBRARY USRSCTP_INCLUDE)
