@@ -45,7 +45,7 @@ using namespace std;
 std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname << ":" << ice_server.port; }
 
 PeerConnection::PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
-	: config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB) {
+    : config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB) {
   if (config_.certificates.empty()) {
     config_.certificates.push_back(RTCCertificate::GenerateCertificate("rtcdcpp", 365));
   }
@@ -68,17 +68,17 @@ bool PeerConnection::Initialize() {
       std::bind(&DTLSWrapper::EncryptData, dtls.get(), std::placeholders::_1),
       std::bind(&PeerConnection::OnSCTPMsgReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   if (!dtls->Initialize()) {
-	//std::cerr << "DTLS failure\n";
+    //std::cerr << "DTLS failure\n";
     return false;
   }
 
   if (!nice->Initialize()) {
-	//std::cerr << "NICE failure\n";
+    //std::cerr << "NICE failure\n";
     return false;
   }
 
   if (!sctp->Initialize()) {
-	//std::cerr << "SCTP failure\n";
+    //std::cerr << "SCTP failure\n";
     return false;
   }
 
@@ -169,7 +169,7 @@ std::string PeerConnection::GenerateAnswer() {
 
 bool PeerConnection::SetRemoteIceCandidate(string candidate_sdp)
 {
-	return this->nice->SetRemoteIceCandidate( std::string{ "a=" } + candidate_sdp);
+    return this->nice->SetRemoteIceCandidate( std::string{ "a=" } + candidate_sdp);
 }
 
 bool PeerConnection::SetRemoteIceCandidates(vector<string> candidate_sdps) { return this->nice->SetRemoteIceCandidates(candidate_sdps); }
@@ -190,7 +190,7 @@ void PeerConnection::OnIceReady() {
     this->dtls->Start();
   } else {
     // TODO work out
-	//std::cerr << "OnIceReady(): Called twice!!\n";
+    //std::cerr << "OnIceReady(): Called twice!!\n";
   }
 }
 
@@ -208,14 +208,14 @@ void PeerConnection::OnSCTPMsgReceived(ChunkPtr chunk, uint16_t sid, uint32_t pp
     } else if (chunk->Data()[0] == DC_TYPE_CLOSE) {
       HandleDataChannelClose(sid);
     } else {
-	  //std::cerr << "Unknown msg_type for ppid control: " << chunk->Data()[0] << '\n';
+      //std::cerr << "Unknown msg_type for ppid control: " << chunk->Data()[0] << '\n';
     }
   } else if ((ppid == PPID_STRING) || (ppid == PPID_STRING_EMPTY)) {
     HandleStringMessage(chunk, sid);
   } else if ((ppid == PPID_BINARY) || (ppid == PPID_BINARY_EMPTY)) {
     HandleBinaryMessage(chunk, sid);
   } else {
-	//std::cerr << "Unknown ppid= " << ppid << '\n';
+    //std::cerr << "Unknown ppid= " << ppid << '\n';
   }
 }
 
@@ -249,7 +249,7 @@ void PeerConnection::HandleNewDataChannel(ChunkPtr chunk, uint16_t sid) {
   if (this->new_channel_cb) {
     this->new_channel_cb(new_channel);
   } else {
-	//std::cerr << "No new channel callback, ignoring new channel\n";
+    //std::cerr << "No new channel callback, ignoring new channel\n";
   }
 }
 
@@ -258,10 +258,10 @@ void PeerConnection::HandleDataChannelAck(uint16_t sid) {
   if (this->new_channel_cb) {
     this->new_channel_cb(new_channel);
   } else {
-	//std::cerr << "No new channel callback, ignoring new channel\n";
+    //std::cerr << "No new channel callback, ignoring new channel\n";
   }
   if (!new_channel) {
-	//std::cerr << "Cannot find the datachannel for sid: " << sid << '\n';
+    //std::cerr << "Cannot find the datachannel for sid: " << sid << '\n';
   } else {
     new_channel->OnOpen();
   }
@@ -270,7 +270,7 @@ void PeerConnection::HandleDataChannelAck(uint16_t sid) {
 void PeerConnection::HandleDataChannelClose(uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received close for unknown channel: " << sid << '\n';
+    //std::cerr << "Received close for unknown channel: " << sid << '\n';
     return;
   }
   cur_channel->OnClosed();
@@ -279,7 +279,7 @@ void PeerConnection::HandleDataChannelClose(uint16_t sid) {
 void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received msg on unknown channel: " << sid << '\n';
+    //std::cerr << "Received msg on unknown channel: " << sid << '\n';
     return;
   }
   std::string cur_msg(reinterpret_cast<char *>(chunk->Data()), chunk->Length());
@@ -290,7 +290,7 @@ void PeerConnection::HandleStringMessage(ChunkPtr chunk, uint16_t sid) {
 void PeerConnection::HandleBinaryMessage(ChunkPtr chunk, uint16_t sid) {
   auto cur_channel = GetChannel(sid);
   if (!cur_channel) {
-	//std::cerr << "Received binary msg on unknown channel: " << sid << '\n';
+    //std::cerr << "Received binary msg on unknown channel: " << sid << '\n';
     return;
   }
 

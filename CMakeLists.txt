@@ -5,16 +5,11 @@ project(rtcdcpp)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Modules")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+if(NOT WIN32)
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+endif()
 find_package(OpenSSL REQUIRED)
 find_package(UsrSCTP REQUIRED)
-find_package(LibNice REQUIRED)
-
-link_directories(${OPENSSL_LIB_DIR})
-link_directories(${NICE_LIB_DIR})
-
-message("RTCDCPP includes: " ${INCLUDES})
-message("RTCDCPP libs: " ${LIBS})
 
 set(HEADERS
 	include/Chunk.hpp
@@ -41,19 +36,26 @@ add_library(${PROJECT_NAME} SHARED
 	${SOURCES}
 )
 
+link_directories(${OPENSSL_LIB_DIR})
+
+set(DEPEND_INCLUDES
+	${NICE_INCLUDE_DIR}
+	${GLIB_INCLUDE_DIR}
+	${GLIBCONFIG_INCLUDE_DIR}
+	)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
+	${DEPEND_INCLUDES}
 	${CMAKE_SOURCE_DIR}/include
 	${OPENSSL_INCLUDE_DIR}
-#	${INCLUDES}
 )
 
 target_link_libraries(${PROJECT_NAME}
+	${DEPEND_LIBS}
 	${OPENSSL_LIBRARIES}
 	SctpLab::UsrSCTP
-#	${LIBS}
-	LibNice::LibNice
 )
 
 if(WIN32)
-  target_link_libraries(${PROJECT_NAME} ws2_32)
+  target_link_libraries(${PROJECT_NAME} ws2_32 iphlpapi)
 endif()
