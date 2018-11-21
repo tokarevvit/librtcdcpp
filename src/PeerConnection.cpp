@@ -28,6 +28,7 @@
 /**
  * RTC Handler.
  */
+#include <iostream>
 #include <sstream>
 
 #include "PeerConnection.hpp"
@@ -68,17 +69,17 @@ bool PeerConnection::Initialize() {
       std::bind(&DTLSWrapper::EncryptData, dtls.get(), std::placeholders::_1),
       std::bind(&PeerConnection::OnSCTPMsgReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   if (!dtls->Initialize()) {
-    //std::cerr << "DTLS failure\n";
-    return false;
-  }
-
-  if (!nice->Initialize()) {
-    //std::cerr << "NICE failure\n";
+    std::cerr << "DTLS failure\n";
     return false;
   }
 
   if (!sctp->Initialize()) {
-    //std::cerr << "SCTP failure\n";
+    std::cerr << "SCTP failure\n";
+    return false;
+  }
+
+  if (!nice->Initialize()) {
+    std::cerr << "NICE failure\n";
     return false;
   }
 

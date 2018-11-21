@@ -156,7 +156,7 @@
    g_object_set(G_OBJECT(agent.get()), "controlling-mode", 0, NULL);
 
    if (config.ice_servers.size() > 1) {
-     throw std::invalid_argument("Only up to one ICE server is currently supported");
+     throw std::invalid_argument("Only up to one ICE server is currently supported\n");
    }
 
    for (auto ice_server : config.ice_servers) {
