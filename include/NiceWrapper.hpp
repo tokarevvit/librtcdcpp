@@ -114,6 +114,8 @@ class NiceWrapper {
   void OnDataReceived(const uint8_t *buf, int len);
   void OnIceReady();
   void LogMessage(const gchar *message);
+  void AddStunServers(const RTCConfiguration &config);
+  void AddTurnServers(const RTCConfiguration &config);
 
   // Helper functions
   friend void candidate_gathering_done(NiceAgent *agent, guint stream_id, gpointer user_data);

@@ -45,6 +45,18 @@
    }
  }
 
+ const char* GetIpByHostname(const char *hostname)
+ {
+     struct hostent *stun_host = gethostbyname(hostname);
+     if (stun_host == nullptr) {
+         //std::cerr << "Failed to lookup host for server: " << hostname << '\n';
+         return nullptr;
+     } else {
+         in_addr *address = (in_addr *)stun_host->h_addr;
+         return inet_ntoa(*address);
+     }
+ }
+
  namespace rtcdcpp {
 
  using namespace std;
@@ -134,8 +146,6 @@
  void NiceWrapper::LogMessage(const gchar *message) {}
 
  bool NiceWrapper::Initialize() {
-   auto config = peer_connection->config();
-
    int log_flags = G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL | G_LOG_FLAG_RECURSION;
    g_log_set_handler(NULL, (GLogLevelFlags)log_flags, nice_log_handler, this);
    this->loop = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>(g_main_loop_new(NULL, FALSE), g_main_loop_unref);
@@ -155,33 +165,6 @@
    g_object_set(G_OBJECT(agent.get()), "upnp", FALSE, NULL);
    g_object_set(G_OBJECT(agent.get()), "controlling-mode", 0, NULL);
 
-   if (config.ice_servers.size() > 1) {
-     throw std::invalid_argument("Only up to one ICE server is currently supported\n");
-   }
-
-   for (auto ice_server : config.ice_servers) {
-     struct hostent *stun_host = gethostbyname(ice_server.hostname.c_str());
-     if (stun_host == nullptr) {
-      //std::cerr << "Failed to lookup host for server: " << ice_server << '\n';
-     } else {
-       in_addr *address = (in_addr *)stun_host->h_addr;
-       const char *ip_address = inet_ntoa(*address);
-
-       g_object_set(G_OBJECT(agent.get()), "stun-server", ip_address, NULL);
-     }
-
-     if (ice_server.port > 0) {
-       g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port, NULL);
-     } else {
-      //std::cerr << "stun port empty\n";
-     }
-   }
-
-   g_signal_connect(G_OBJECT(agent.get()), "candidate-gathering-done", G_CALLBACK(candidate_gathering_done), this);
-   g_signal_connect(G_OBJECT(agent.get()), "component-state-changed", G_CALLBACK(component_state_changed), this);
-   g_signal_connect(G_OBJECT(agent.get()), "new-candidate-full", G_CALLBACK(new_local_candidate), this);
-   g_signal_connect(G_OBJECT(agent.get()), "new-selected-pair", G_CALLBACK(new_selected_pair), this);
-
    // TODO: Learn more about nice streams
    this->stream_id = nice_agent_add_stream(agent.get(), 1);
    if (this->stream_id == 0) {
@@ -190,15 +173,70 @@
 
    nice_agent_set_stream_name(agent.get(), this->stream_id, "application");
 
-   if (!config.ice_ufrag.empty() && !config.ice_pwd.empty()) {
-     nice_agent_set_local_credentials(agent.get(), this->stream_id, config.ice_ufrag.c_str(), config.ice_pwd.c_str());
+   if(IceServerType::STUN == peer_connection->config().type)
+   {
+       AddStunServers(peer_connection->config());
+   }
+   else
+   {
+       AddTurnServers(peer_connection->config());
    }
 
-   if (config.ice_port_range.first != 0 || config.ice_port_range.second != 0) {
-     nice_agent_set_port_range(agent.get(), this->stream_id, 1, config.ice_port_range.first, config.ice_port_range.second);
-   }
+   g_signal_connect(G_OBJECT(agent.get()), "candidate-gathering-done", G_CALLBACK(candidate_gathering_done), this);
+   g_signal_connect(G_OBJECT(agent.get()), "component-state-changed", G_CALLBACK(component_state_changed), this);
+   g_signal_connect(G_OBJECT(agent.get()), "new-candidate-full", G_CALLBACK(new_local_candidate), this);
+   g_signal_connect(G_OBJECT(agent.get()), "new-selected-pair", G_CALLBACK(new_selected_pair), this);
 
    return (bool)nice_agent_attach_recv(agent.get(), this->stream_id, 1, g_main_loop_get_context(loop.get()), data_received, this);
+ }
+
+ void NiceWrapper::AddStunServers(const RTCConfiguration &config)
+ {
+     if (config.ice_servers.size() > 1) {
+       throw std::invalid_argument("Only up to one ICE server is currently supported\n");
+     }
+
+     for (const auto &ice_server : config.ice_servers) {
+         const char *ipAddr = GetIpByHostname(ice_server.hostname.c_str());
+         if(nullptr != ipAddr) {
+             g_object_set(G_OBJECT(agent.get()), "stun-server", ipAddr, NULL);
+         }
+         if (ice_server.port > 0) {
+             g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port, NULL);
+         } else {
+             //std::cerr << "stun port empty\n";
+         }
+     }
+
+     if (!config.ice_ufrag.empty() && !config.ice_pwd.empty()) {
+         nice_agent_set_local_credentials(agent.get(), this->stream_id, config.ice_ufrag.c_str(), config.ice_pwd.c_str());
+     }
+
+     if (config.ice_port_range.first != 0 || config.ice_port_range.second != 0) {
+         nice_agent_set_port_range(agent.get(), this->stream_id, 1, config.ice_port_range.first, config.ice_port_range.second);
+     }
+ }
+
+ void NiceWrapper::AddTurnServers(const RTCConfiguration &config)
+ {
+    for(const auto &turnServ : config.ice_servers) {
+        const char *ipAddr = GetIpByHostname(turnServ.hostname.c_str());
+        if(nullptr != ipAddr
+           && 0 < turnServ.port
+           && !config.ice_ufrag.empty()
+           && !config.ice_pwd.empty() )
+        {
+            nice_agent_set_relay_info(this->agent.get()
+                                      , this->stream_id
+                                      , 1
+                                      , ipAddr
+                                      , turnServ.port
+                                      , config.ice_ufrag.c_str()
+                                      , config.ice_pwd.c_str()
+                                      , NICE_RELAY_TYPE_TURN_UDP
+                                      );
+        }
+    }
  }
 
  void NiceWrapper::StartSendLoop() { this->send_thread = std::thread(&NiceWrapper::SendLoop, this); }
