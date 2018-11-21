@@ -36,6 +36,7 @@
 
 #include "ChunkQueue.hpp"
 #include "PeerConnection.hpp"
+#include "RTCCertificate.hpp"
 
 
 namespace rtcdcpp {
@@ -45,7 +46,7 @@ class DTLSWrapper {
   DTLSWrapper(PeerConnection *peer_connection);
   virtual ~DTLSWrapper();
 
-  const RTCCertificate *certificate() { return certificate_; }
+  const RTCCertificate& Certificate() { return certificate_; }
 
   bool Initialize();
   void Start();
@@ -59,7 +60,7 @@ class DTLSWrapper {
 
  private:
   PeerConnection *peer_connection;
-  const RTCCertificate *certificate_;
+  RTCCertificate certificate_;
 
   std::atomic<bool> should_stop;
 

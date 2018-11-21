@@ -36,7 +36,6 @@
 #include "openssl/ssl.h"
 
 #include "DTLSWrapper.hpp"
-#include "RTCCertificate.hpp"
 
 
 namespace rtcdcpp {
@@ -44,11 +43,10 @@ namespace rtcdcpp {
 using namespace std;
 
 DTLSWrapper::DTLSWrapper(PeerConnection *peer_connection)
-    : peer_connection(peer_connection), certificate_(nullptr), handshake_complete(false), should_stop(false) {
-  if (peer_connection->config().certificates.size() != 1) {
-    throw std::runtime_error("At least one and only one certificate has to be set");
-  }
-  certificate_ = &peer_connection->config().certificates.front();
+    : peer_connection(peer_connection)
+    , certificate_(RTCCertificate::GenerateCertificate("rtcdcpp", 365))
+    , handshake_complete(false)
+    , should_stop(false) {
   this->decrypted_callback = [](ChunkPtr x) { ; };
   this->encrypted_callback = [](ChunkPtr x) { ; };
 }
@@ -91,8 +89,8 @@ bool DTLSWrapper::Initialize() {
 
   SSL_CTX_set_read_ahead(ctx, 1);
   SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, verify_peer_certificate);
-  SSL_CTX_use_PrivateKey(ctx, certificate_->evp_pkey());
-  SSL_CTX_use_certificate(ctx, certificate_->x509());
+  SSL_CTX_use_PrivateKey(ctx, certificate_.evp_pkey());
+  SSL_CTX_use_certificate(ctx, certificate_.x509());
 
   if (SSL_CTX_check_private_key(ctx) != 1) {
     return false;

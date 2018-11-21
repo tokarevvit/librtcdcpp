@@ -30,10 +30,11 @@
  */
 
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <errno.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
+#include <cstdarg>
 
 #include "SCTPWrapper.hpp"
 

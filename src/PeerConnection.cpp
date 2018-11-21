@@ -41,17 +41,15 @@
 
 namespace rtcdcpp {
 
-using namespace std;
 
 std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname << ":" << ice_server.port; }
 
-PeerConnection::PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
-    : config_(config), ice_candidate_cb(icCB), new_channel_cb(dcCB) {
-  if (config_.certificates.empty()) {
-    config_.certificates.push_back(RTCCertificate::GenerateCertificate("rtcdcpp", 365));
-  }
+PeerConnection::PeerConnection(const IceConfig &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
+    : config_(config)
+    , ice_candidate_cb(icCB)
+    , new_channel_cb(dcCB) {
   if (!Initialize()) {
-    throw runtime_error("Could not initialize");
+    throw std::runtime_error("Could not initialize");
   }
 }
 
@@ -63,9 +61,9 @@ PeerConnection::~PeerConnection() {
 
 bool PeerConnection::Initialize() {
   srand((unsigned)time(nullptr));
-  this->nice = make_unique<NiceWrapper>(this);
-  this->dtls = make_unique<DTLSWrapper>(this);
-  this->sctp = make_unique<SCTPWrapper>(
+  this->nice = std::make_unique<NiceWrapper>(this);
+  this->dtls = std::make_unique<DTLSWrapper>(this);
+  this->sctp = std::make_unique<SCTPWrapper>(
       std::bind(&DTLSWrapper::EncryptData, dtls.get(), std::placeholders::_1),
       std::bind(&PeerConnection::OnSCTPMsgReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   if (!dtls->Initialize()) {
@@ -142,7 +140,7 @@ std::string PeerConnection::GenerateOffer() {
   sdp << "a=setup:actpass\r\n";
   sdp << "a=dtls-id:1\r\n";
   sdp << this->nice->GenerateLocalSDP();
-  sdp << "a=fingerprint:sha-256 " << dtls->certificate()->fingerprint() << "\r\n";
+  sdp << "a=fingerprint:sha-256 " << dtls->Certificate().fingerprint() << "\r\n";
   sdp << "a=sctpmap:5000 webrtc-datachannel 262144\r\n";
 
   return sdp.str();
@@ -159,7 +157,7 @@ std::string PeerConnection::GenerateAnswer() {
   sdp << "m=application 9 DTLS/SCTP 5000\r\n";  // XXX: hardcoded port
   sdp << "c=IN IP4 0.0.0.0\r\n";
   sdp << this->nice->GenerateLocalSDP();
-  sdp << "a=fingerprint:sha-256 " << dtls->certificate()->fingerprint() << "\r\n";
+  sdp << "a=fingerprint:sha-256 " << dtls->Certificate().fingerprint() << "\r\n";
   sdp << "a=ice-options:trickle\r\n";
   sdp << "a=setup:" << (this->role == Client ? "active" : "passive") << "\r\n";
   sdp << "a=mid:" << this->mid << "\r\n";
@@ -168,12 +166,12 @@ std::string PeerConnection::GenerateAnswer() {
   return sdp.str();
 }
 
-bool PeerConnection::SetRemoteIceCandidate(string candidate_sdp)
+bool PeerConnection::SetRemoteIceCandidate(const std::string &candidate_sdp)
 {
     return this->nice->SetRemoteIceCandidate( std::string{ "a=" } + candidate_sdp);
 }
 
-bool PeerConnection::SetRemoteIceCandidates(vector<string> candidate_sdps) { return this->nice->SetRemoteIceCandidates(candidate_sdps); }
+bool PeerConnection::SetRemoteIceCandidates(const std::vector<std::string> &candidate_sdps) { return this->nice->SetRemoteIceCandidates(candidate_sdps); }
 
 void PeerConnection::OnLocalIceCandidate(std::string &ice_candidate) {
   if (this->ice_candidate_cb) {
@@ -304,7 +302,7 @@ void PeerConnection::SendStrMsg(std::string str_msg, uint16_t sid) {
     auto cur_msg = std::make_shared<Chunk>((const uint8_t *)str_msg.c_str(), str_msg.size());
     this->sctp->GSForSCTP(cur_msg, sid, PPID_STRING);
   } else {
-    throw runtime_error("Datachannel does not exist");
+    throw std::runtime_error("Datachannel does not exist");
   }
 }
 
@@ -314,7 +312,7 @@ void PeerConnection::SendBinaryMsg(const uint8_t *data, int len, uint16_t sid) {
     auto cur_msg = std::make_shared<Chunk>(data, len);
     this->sctp->GSForSCTP(cur_msg, sid, PPID_BINARY);
   } else {
-    throw runtime_error("Datachannel does not exist");
+    throw std::runtime_error("Datachannel does not exist");
   }
 }
 

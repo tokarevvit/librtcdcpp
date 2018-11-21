@@ -32,7 +32,6 @@
 
 #include "ChunkQueue.hpp"
 #include "DataChannel.hpp"
-#include "RTCCertificate.hpp"
 
 
 namespace rtcdcpp {
@@ -48,13 +47,30 @@ namespace rtcdcpp {
 
   std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server);
 
+  enum class IceServerType {
+      STUN
+      , TURN
+  };
+
   struct RTCConfiguration {
+      RTCConfiguration(IceServerType serverType
+                       , const std::vector<RTCIceServer> &servers
+                       , std::string ufrag = ""
+                       , std::string pwd = "")
+          : type(serverType)
+          , ice_servers(servers)
+          , ice_ufrag(std::move(ufrag))
+          , ice_pwd(std::move(pwd))
+      {
+      }
+
+    IceServerType type;
     std::vector<RTCIceServer> ice_servers;
-    std::pair<unsigned, unsigned> ice_port_range;
     std::string ice_ufrag;
     std::string ice_pwd;
-    std::vector<RTCCertificate> certificates;
   };
+
+  using IceConfig = std::vector<RTCConfiguration>;
 
   class PeerConnection {
     friend class DTLSWrapper;
@@ -71,11 +87,11 @@ namespace rtcdcpp {
     using IceCandidateCallbackPtr = std::function<void(IceCandidate)>;
     using DataChannelCallbackPtr = std::function<void(std::shared_ptr<DataChannel> channel)>;
 
-    PeerConnection(const RTCConfiguration &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB);
+    PeerConnection(const IceConfig &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB);
 
     virtual ~PeerConnection();
 
-    const RTCConfiguration &config() { return config_; }
+    const IceConfig& Config() const noexcept { return config_; }
 
     /**
      *
@@ -97,13 +113,13 @@ namespace rtcdcpp {
      * Handle remote ICE Candidate.
      * Supports trickle ice candidates.
      */
-    bool SetRemoteIceCandidate(std::string candidate_sdp);
+    bool SetRemoteIceCandidate(const std::string &candidate_sdp);
 
     /**
      * Handle remote ICE Candidates.
      * TODO: Handle trickle ice candidates.
      */
-    bool SetRemoteIceCandidates(std::vector<std::string> candidate_sdps);
+    bool SetRemoteIceCandidates(const std::vector<std::string> &candidate_sdps);
 
     /**
      * Create a new data channel with the given label.
@@ -133,7 +149,7 @@ namespace rtcdcpp {
     void OnSCTPMsgReceived(ChunkPtr chunk, uint16_t sid, uint32_t ppid);
 
     private:
-    RTCConfiguration config_;
+    IceConfig config_;
     const IceCandidateCallbackPtr ice_candidate_cb;
     const DataChannelCallbackPtr new_channel_cb;
     std::string mid;

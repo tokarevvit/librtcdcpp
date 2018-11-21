@@ -173,13 +173,13 @@
 
    nice_agent_set_stream_name(agent.get(), this->stream_id, "application");
 
-   if(IceServerType::STUN == peer_connection->config().type)
-   {
-       AddStunServers(peer_connection->config());
-   }
-   else
-   {
-       AddTurnServers(peer_connection->config());
+   for(const auto &conf : peer_connection->Config()) {
+       if(IceServerType::STUN == conf.type) {
+           AddStunServers(conf);
+       }
+       else {
+           AddTurnServers(conf);
+       }
    }
 
    g_signal_connect(G_OBJECT(agent.get()), "candidate-gathering-done", G_CALLBACK(candidate_gathering_done), this);
@@ -187,7 +187,11 @@
    g_signal_connect(G_OBJECT(agent.get()), "new-candidate-full", G_CALLBACK(new_local_candidate), this);
    g_signal_connect(G_OBJECT(agent.get()), "new-selected-pair", G_CALLBACK(new_selected_pair), this);
 
-   return (bool)nice_agent_attach_recv(agent.get(), this->stream_id, 1, g_main_loop_get_context(loop.get()), data_received, this);
+   if(!nice_agent_attach_recv(agent.get(), this->stream_id, 1, g_main_loop_get_context(loop.get()), data_received, this)) {
+       return false;
+   }
+
+   return true;
  }
 
  void NiceWrapper::AddStunServers(const RTCConfiguration &config)
@@ -210,10 +214,6 @@
 
      if (!config.ice_ufrag.empty() && !config.ice_pwd.empty()) {
          nice_agent_set_local_credentials(agent.get(), this->stream_id, config.ice_ufrag.c_str(), config.ice_pwd.c_str());
-     }
-
-     if (config.ice_port_range.first != 0 || config.ice_port_range.second != 0) {
-         nice_agent_set_port_range(agent.get(), this->stream_id, 1, config.ice_port_range.first, config.ice_port_range.second);
      }
  }
 
