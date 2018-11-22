@@ -177,8 +177,11 @@
        if(IceServerType::STUN == conf.type) {
            AddStunServers(conf);
        }
-       else {
+       else if(IceServerType::TURN == conf.type) {
            AddTurnServers(conf);
+       }
+       else {
+           continue;
        }
    }
 
@@ -201,12 +204,12 @@
      }
 
      for (const auto &ice_server : config.ice_servers) {
-         const char *ipAddr = GetIpByHostname(ice_server.hostname.c_str());
+         const char *ipAddr = GetIpByHostname(ice_server.hostname_.c_str());
          if(nullptr != ipAddr) {
              g_object_set(G_OBJECT(agent.get()), "stun-server", ipAddr, NULL);
          }
-         if (ice_server.port > 0) {
-             g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port, NULL);
+         if (ice_server.port_ > 0) {
+             g_object_set(G_OBJECT(agent.get()), "stun-server-port", ice_server.port_, NULL);
          } else {
              //std::cerr << "stun port empty\n";
          }
@@ -220,9 +223,9 @@
  void NiceWrapper::AddTurnServers(const RTCConfiguration &config)
  {
     for(const auto &turnServ : config.ice_servers) {
-        const char *ipAddr = GetIpByHostname(turnServ.hostname.c_str());
+        const char *ipAddr = GetIpByHostname(turnServ.hostname_.c_str());
         if(nullptr != ipAddr
-           && 0 < turnServ.port
+           && 0 < turnServ.port_
            && !config.ice_ufrag.empty()
            && !config.ice_pwd.empty() )
         {
@@ -230,7 +233,7 @@
                                       , this->stream_id
                                       , 1
                                       , ipAddr
-                                      , turnServ.port
+                                      , turnServ.port_
                                       , config.ice_ufrag.c_str()
                                       , config.ice_pwd.c_str()
                                       , NICE_RELAY_TYPE_TURN_UDP

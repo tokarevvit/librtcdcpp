@@ -41,8 +41,19 @@ namespace rtcdcpp {
   class SCTPWrapper;
 
   struct RTCIceServer {
-    std::string hostname;
-    int port;
+      RTCIceServer()
+          : hostname_()
+          , port_(0)
+      {
+      }
+      RTCIceServer(const std::string &hostname, int port)
+          : hostname_(hostname)
+          , port_(port)
+      {
+      }
+
+    std::string hostname_;
+    int port_;
   };
 
   std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server);
@@ -53,6 +64,13 @@ namespace rtcdcpp {
   };
 
   struct RTCConfiguration {
+      RTCConfiguration()
+          : type(IceServerType::STUN)
+          , ice_servers()
+          , ice_ufrag("")
+          , ice_pwd("")
+      {
+      }
       RTCConfiguration(IceServerType serverType
                        , const std::vector<RTCIceServer> &servers
                        , std::string ufrag = ""

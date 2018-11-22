@@ -42,7 +42,7 @@
 namespace rtcdcpp {
 
 
-std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname << ":" << ice_server.port; }
+std::ostream &operator<<(std::ostream &os, const RTCIceServer &ice_server) { return os << ice_server.hostname_ << ":" << ice_server.port_; }
 
 PeerConnection::PeerConnection(const IceConfig &config, IceCandidateCallbackPtr icCB, DataChannelCallbackPtr dcCB)
     : config_(config)
