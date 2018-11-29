@@ -78,6 +78,7 @@ class SCTPWrapper {
   // Send a message to the remote connection
   // Note, this will cause 1+ DTLSEncrypt callback calls
   void GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid);
+  void StopSend();
 
  private:
   //  PeerConnection *peer_connection;
@@ -105,6 +106,8 @@ class SCTPWrapper {
   std::atomic<bool> should_stop{false};
   std::thread recv_thread;
   std::thread connect_thread;
+
+  std::atomic<bool> shouldSend{true};
 
   void RunConnect();
   void RecvLoop();

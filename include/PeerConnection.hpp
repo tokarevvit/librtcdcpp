@@ -159,6 +159,7 @@ namespace rtcdcpp {
 
     void SendStrMsg(std::string msg, uint16_t sid);
     void SendBinaryMsg(const uint8_t *data, int len, uint16_t sid);
+    void StopSendData();
 
     /* Internal Callback Handlers */
     void OnLocalIceCandidate(std::string &ice_candidate);

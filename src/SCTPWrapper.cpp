@@ -479,6 +479,8 @@ void SCTPWrapper::CreateDCForSCTP(std::string label, std::string protocol, uint8
 }
 // Send a message to the remote connection
 void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
+  shouldSend = true;
+
   struct sctp_sendv_spa spa = {0};
 
   // spa.sendv_flags = SCTP_SEND_SNDINFO_VALID | SCTP_SEND_PRINFO_VALID;
@@ -493,16 +495,26 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   int tries = 0;
   // "Resource temporarily unavaliable" occurs without a timeout. this->reliability is always 0
 //  while (tries <= this->reliability) {
-  while (tries < 300) {
-    if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
-      //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
-      std::this_thread::sleep_for(std::chrono::milliseconds(tries));
-      tries += 1;
-    } else {
-      return;
-    }
+  while (tries < 200 && shouldSend) {
+      if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
+          //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
+          std::this_thread::sleep_for(std::chrono::milliseconds(tries));
+          tries += 1;
+      } else {
+          return;
+      }
   }
-  throw std::runtime_error("Send failed");
+  if(!shouldSend) {
+      throw std::runtime_error("Send cancelled");
+  }
+  else {
+    throw std::runtime_error("Send failed");
+  }
+}
+
+void SCTPWrapper::StopSend()
+{
+    shouldSend = false;
 }
 
 void SCTPWrapper::RecvLoop() {

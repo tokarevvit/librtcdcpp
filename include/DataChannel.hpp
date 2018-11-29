@@ -136,6 +136,7 @@ class DataChannel {
    */
   bool SendString(std::string msg);
   bool SendBinary(const uint8_t *msg, int len);
+  void StopSendData();
 
   // Callbacks
 

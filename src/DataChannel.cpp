@@ -82,6 +82,11 @@ bool DataChannel::SendBinary(const uint8_t *msg, int len) {
   return true;
 }
 
+void DataChannel::StopSendData()
+{
+    pc->StopSendData();
+}
+
 void DataChannel::SetOnOpen(std::function<void()> open_cb) { this->open_cb = open_cb; }
 
 void DataChannel::SetOnStringMsgCallback(std::function<void(std::string msg)> str_msg_cb) { this->str_msg_cb = str_msg_cb; }

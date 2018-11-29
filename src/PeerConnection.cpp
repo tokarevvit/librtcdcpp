@@ -199,19 +199,25 @@ void PeerConnection::OnDTLSHandshakeDone() {
 
 // Matches DataChannel onmessage
 void PeerConnection::OnSCTPMsgReceived(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
+//    std::cerr << "PeerConnection::OnSCTPMsgReceived, new message, sid = " << sid << '\n';
   if (ppid == PPID_CONTROL) {
     if (chunk->Data()[0] == DC_TYPE_OPEN) {
+//        std::cerr << "PeerConnection::OnSCTPMsgReceived, open data channel, sid = " << sid << '\n';
       HandleNewDataChannel(chunk, sid);
     } else if (chunk->Data()[0] == DC_TYPE_ACK) {
+//        std::cerr << "PeerConnection::OnSCTPMsgReceived, data channel ack, sid = " << sid << '\n';
       HandleDataChannelAck(sid);
     } else if (chunk->Data()[0] == DC_TYPE_CLOSE) {
+//        std::cerr << "PeerConnection::OnSCTPMsgReceived, close data channel, sid = " << sid << '\n';
       HandleDataChannelClose(sid);
     } else {
       //std::cerr << "Unknown msg_type for ppid control: " << chunk->Data()[0] << '\n';
     }
   } else if ((ppid == PPID_STRING) || (ppid == PPID_STRING_EMPTY)) {
+//      std::cerr << "PeerConnection::OnSCTPMsgReceived, some string msg, sid = " << sid << '\n';
     HandleStringMessage(chunk, sid);
   } else if ((ppid == PPID_BINARY) || (ppid == PPID_BINARY_EMPTY)) {
+//      std::cerr << "PeerConnection::OnSCTPMsgReceived, some binary msg, sid = " << sid << '\n';
     HandleBinaryMessage(chunk, sid);
   } else {
     //std::cerr << "Unknown ppid= " << ppid << '\n';
@@ -314,6 +320,11 @@ void PeerConnection::SendBinaryMsg(const uint8_t *data, int len, uint16_t sid) {
   } else {
     throw std::runtime_error("Datachannel does not exist");
   }
+}
+
+void PeerConnection::StopSendData()
+{
+    sctp->StopSend();
 }
 
 std::shared_ptr<DataChannel> PeerConnection::CreateDataChannel(std::string label, std::string protocol, uint8_t chan_type, uint32_t reliability) {
