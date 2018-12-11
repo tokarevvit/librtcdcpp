@@ -5,9 +5,6 @@ project(rtcdcpp)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Modules")
-if(NOT WIN32)
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-endif()
 find_package(OpenSSL REQUIRED)
 find_package(UsrSCTP REQUIRED)
 
