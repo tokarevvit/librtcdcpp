@@ -36,13 +36,18 @@
 
 #include "Chunk.hpp"
 
+#ifdef __MINGW32__
+#define EXPORT __attribute__((dllexport))
+#else
+#define EXPORT
+#endif //__MINGW32__
 
 namespace rtcdcpp {
 
 /**
  * Thread-Safe Queue of DataChunks
  */
-class ChunkQueue {
+class EXPORT ChunkQueue {
  private:
   mutable std::mutex mut;
   std::queue<ChunkPtr> chunk_queue;

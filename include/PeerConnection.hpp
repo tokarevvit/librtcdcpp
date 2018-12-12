@@ -33,6 +33,11 @@
 #include "ChunkQueue.hpp"
 #include "DataChannel.hpp"
 
+#ifdef __MINGW32__
+#define EXPORT __attribute__((dllexport))
+#else
+#define EXPORT
+#endif //__MINGW32__
 
 namespace rtcdcpp {
 
@@ -90,7 +95,7 @@ namespace rtcdcpp {
 
   using IceConfig = std::vector<RTCConfiguration>;
 
-  class PeerConnection {
+  class EXPORT PeerConnection {
     friend class DTLSWrapper;
     friend class DataChannel;
     public:

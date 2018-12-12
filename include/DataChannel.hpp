@@ -36,6 +36,12 @@
 
 #include "Chunk.hpp"
 
+#ifdef __MINGW32__
+#define EXPORT __attribute__((dllexport))
+#else
+#define EXPORT
+#endif //__MINGW32__
+
 
 namespace rtcdcpp {
 
@@ -74,7 +80,7 @@ typedef struct { uint8_t msg_type; } dc_open_ack;
 
 class PeerConnection;
 
-class DataChannel {
+class EXPORT DataChannel {
   friend class PeerConnection;
 
  private:
