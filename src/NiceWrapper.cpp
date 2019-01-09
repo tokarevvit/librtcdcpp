@@ -151,20 +151,20 @@
 
    this->context = std::unique_ptr<GMainContext, void (*)(GMainContext *)>(g_main_context_new(), g_main_context_unref);
    if (!this->context) {
-    std::cerr << "Failed to initialize GMainContext\n";
+//    std::cerr << "Failed to initialize GMainContext\n";
     return false;
    }
 
    this->loop = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>(g_main_loop_new(context.get(), FALSE), g_main_loop_unref);
    if (!this->loop) {
-    std::cerr << "Failed to initialize GMainLoop\n";
+//    std::cerr << "Failed to initialize GMainLoop\n";
     return false;
    }
 
    this->agent = std::unique_ptr<NiceAgent, decltype(&g_object_unref)>(nice_agent_new(g_main_loop_get_context(loop.get()), NICE_COMPATIBILITY_RFC5245),
                                                                        g_object_unref);
    if (!this->agent) {
-     std::cerr << "Failed to initialize nice agent\n";
+//     std::cerr << "Failed to initialize nice agent\n";
      return false;
    }
 
