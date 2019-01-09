@@ -62,7 +62,7 @@
  using namespace std;
 
  NiceWrapper::NiceWrapper(PeerConnection *peer_connection)
-     : peer_connection(peer_connection), stream_id(0), should_stop(false), send_queue(), agent(NULL, nullptr), loop(NULL, nullptr), packets_sent(0) {
+     : peer_connection(peer_connection), stream_id(0), should_stop(false), send_queue(), agent(NULL, nullptr), loop(NULL, nullptr), context(NULL, nullptr), packets_sent(0) {
    data_received_callback = [](ChunkPtr x) { ; };
    nice_debug_disable(true);
  }
@@ -148,15 +148,23 @@
  bool NiceWrapper::Initialize() {
    int log_flags = G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL | G_LOG_FLAG_RECURSION;
    g_log_set_handler(NULL, (GLogLevelFlags)log_flags, nice_log_handler, this);
-   this->loop = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>(g_main_loop_new(NULL, FALSE), g_main_loop_unref);
+
+   this->context = std::unique_ptr<GMainContext, void (*)(GMainContext *)>(g_main_context_new(), g_main_context_unref);
+   if (!this->context) {
+    std::cerr << "Failed to initialize GMainContext\n";
+    return false;
+   }
+
+   this->loop = std::unique_ptr<GMainLoop, void (*)(GMainLoop *)>(g_main_loop_new(context.get(), FALSE), g_main_loop_unref);
    if (!this->loop) {
-    //std::cerr << "Failed to initialize GMainLoop\n";
+    std::cerr << "Failed to initialize GMainLoop\n";
+    return false;
    }
 
    this->agent = std::unique_ptr<NiceAgent, decltype(&g_object_unref)>(nice_agent_new(g_main_loop_get_context(loop.get()), NICE_COMPATIBILITY_RFC5245),
                                                                        g_object_unref);
    if (!this->agent) {
-    //std::cerr << "Failed to initialize nice agent\n";
+     std::cerr << "Failed to initialize nice agent\n";
      return false;
    }
 

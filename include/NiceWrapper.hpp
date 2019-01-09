@@ -90,6 +90,7 @@ class NiceWrapper {
 
   std::unique_ptr<NiceAgent, void (*)(gpointer)> agent;
   std::unique_ptr<GMainLoop, void (*)(GMainLoop *)> loop;
+  std::unique_ptr<GMainContext, void (*)(GMainContext *)> context;
   uint32_t stream_id;
   std::mutex send_lock;
 
