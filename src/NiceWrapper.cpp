@@ -71,7 +71,7 @@
 
  void new_local_candidate(NiceAgent *agent, NiceCandidate *candidate, gpointer user_data) {
    NiceWrapper *nice = (NiceWrapper *)user_data;
-   gchar *cand = nice_agent_generate_local_candidate_sdp(agent, candidate);
+   gchar *cand = nice_agent_generate_local_candidate_sdp(nice->agent.get(), candidate);
    std::string cand_str(cand);
    nice->OnCandidate(cand_str);
    g_free(cand);
@@ -95,7 +95,7 @@
  // TODO: Callbacks on failure
  void component_state_changed(NiceAgent *agent, guint stream_id, guint component_id, guint state, gpointer user_data) {
    NiceWrapper *nice = (NiceWrapper *)user_data;
-   nice->OnStateChange(stream_id, component_id, state);
+   nice->OnStateChange(nice->stream_id, component_id, state);
  }
 
  void NiceWrapper::OnStateChange(uint32_t stream_id, uint32_t component_id, uint32_t state) {

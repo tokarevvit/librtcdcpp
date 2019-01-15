@@ -495,7 +495,7 @@ void SCTPWrapper::GSForSCTP(ChunkPtr chunk, uint16_t sid, uint32_t ppid) {
   int tries = 0;
   // "Resource temporarily unavaliable" occurs without a timeout. this->reliability is always 0
 //  while (tries <= this->reliability) {
-  while (tries < 200 && shouldSend) {
+  while (tries < 3000 && shouldSend) {
       if (usrsctp_sendv(this->sock, chunk->Data(), chunk->Length(), NULL, 0, &spa, sizeof(spa), SCTP_SENDV_SPA, 0) < 0) {
           //logger->error("FAILED to send, trying again in {} ms. Retry count: {}", tries, tries);
           std::this_thread::sleep_for(std::chrono::milliseconds(tries));
